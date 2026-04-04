@@ -15,7 +15,7 @@
         };
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, Timestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, Timestamp, updateDoc, arrayUnion, arrayRemove, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -23,11 +23,13 @@
         let currentUser = null;
         let isAdmin = false;
         let allPosts = [];
+        let currentView = 'posts'; // 'posts' or 'discussions'
 
         const postsContainer = document.getElementById('postsContainer');
         const createPostBtn = document.getElementById('createPostBtn');
         const profileBtn = document.getElementById('profileBtn');
         const viewPostsBtn = document.getElementById('viewPostsBtn');
+        const discussionsBtn = document.getElementById('discussionsBtn');
         const postModal = document.getElementById('postModal');
         const profileModal = document.getElementById('profileModal');
         const infoModal = document.getElementById('infoModal');
@@ -57,7 +59,180 @@
                 isAdmin = true;
                 sidebarRole.innerText = '👑 АДМИН';
             } else {
+                isAdmin = false;
                 sidebarRole.innerText = 'Пользователь';
+            }
+        }
+
+        function escapeHtml(str) {
+            if(!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if(m === '&') return '&amp;';
+                if(m === '<') return '&lt;';
+                if(m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function renderCommentsTree(comments, postId, level = 0) {
+            if(!comments || comments.length === 0) return '<div style="color:#555; margin-left: 20px;">💬 Нет комментариев. Будьте первым!</div>';
+            let html = '';
+            comments.forEach(c => {
+                const canDelete = isAdmin || c.author === currentUser.nickname;
+                const marginLeft = level * 20;
+                html += `
+                    <div class="comment" style="margin-left: ${marginLeft}px;" data-comment-id="${c.id}">
+                        <div class="comment-header">
+                            <strong class="comment-author">@${escapeHtml(c.author)}</strong>
+                            ${canDelete ? `<button class="delete-comment" data-post-id="${postId}" data-comment-id="${c.id}">🗑</button>` : ''}
+                        </div>
+                        <div class="comment-text">${escapeHtml(c.text)}</div>
+                        <div class="comment-actions">
+                            <button class="reply-to-comment" data-post-id="${postId}" data-comment-id="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button>
+                        </div>
+                        ${c.replies && c.replies.length > 0 ? renderCommentsTree(c.replies, postId, level + 1) : ''}
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        function renderAllDiscussions() {
+            let allCommentsFlat = [];
+            allPosts.forEach(post => {
+                if(post.comments && post.comments.length > 0) {
+                    const flatten = (comments, postId, parentId = null) => {
+                        comments.forEach(c => {
+                            allCommentsFlat.push({
+                                id: c.id,
+                                text: c.text,
+                                author: c.author,
+                                date: c.date,
+                                postId: postId,
+                                postTitle: post.title,
+                                parentId: parentId
+                            });
+                            if(c.replies && c.replies.length > 0) {
+                                flatten(c.replies, postId, c.id);
+                            }
+                        });
+                    };
+                    flatten(post.comments, post.id);
+                }
+            });
+            allCommentsFlat.sort((a, b) => (b.date || 0) - (a.date || 0));
+
+            if(allCommentsFlat.length === 0) {
+                postsContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#888;">💬 Нет комментариев. Напишите первый!</div>';
+                return;
+            }
+
+            let html = '<div class="discussions-list">';
+            allCommentsFlat.forEach(comment => {
+                const canDelete = isAdmin || comment.author === currentUser.nickname;
+                html += `
+                    <div class="discussion-card" data-comment-id="${comment.id}">
+                        <div class="discussion-header">
+                            <strong class="comment-author">@${escapeHtml(comment.author)}</strong>
+                            ${canDelete ? `<button class="delete-discussion-comment" data-post-id="${comment.postId}" data-comment-id="${comment.id}">🗑</button>` : ''}
+                        </div>
+                        <div class="discussion-text">${escapeHtml(comment.text)}</div>
+                        <div class="discussion-meta">
+                            К посту: <a href="#" class="goto-post" data-post-id="${comment.postId}">${escapeHtml(comment.postTitle.substring(0, 50))}</a>
+                        </div>
+                        <div class="comment-actions">
+                            <button class="reply-to-discussion" data-post-id="${comment.postId}" data-parent-comment-id="${comment.id}" data-author="${escapeHtml(comment.author)}">📎 Ответить</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            postsContainer.innerHTML = html;
+
+            document.querySelectorAll('.goto-post').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const postId = btn.getAttribute('data-post-id');
+                    currentView = 'posts';
+                    renderPosts(allPosts);
+                    setTimeout(() => {
+                        const postElement = document.querySelector(`.post-card[data-id="${postId}"]`);
+                        if(postElement) postElement.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                });
+            });
+
+            document.querySelectorAll('.delete-discussion-comment').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const postId = btn.getAttribute('data-post-id');
+                    const commentId = btn.getAttribute('data-comment-id');
+                    await deleteCommentById(postId, commentId);
+                });
+            });
+
+            document.querySelectorAll('.reply-to-discussion').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const postId = btn.getAttribute('data-post-id');
+                    const parentCommentId = btn.getAttribute('data-parent-comment-id');
+                    const author = btn.getAttribute('data-author');
+                    const replyText = prompt(`Ответ @${author}:`, '');
+                    if(replyText && replyText.trim() && replyText.length <= 1000) {
+                        addReplyToComment(postId, parentCommentId, replyText.trim());
+                    } else if(replyText && replyText.length > 1000) {
+                        alert('Ответ не может быть длиннее 1000 символов');
+                    }
+                });
+            });
+        }
+
+        async function deleteCommentById(postId, commentId) {
+            const postRef = doc(db, "posts", postId);
+            const postSnap = await getDoc(postRef);
+            if(postSnap.exists()) {
+                const post = postSnap.data();
+                const removeCommentRecursive = (comments) => {
+                    for(let i = 0; i < comments.length; i++) {
+                        if(comments[i].id === commentId) {
+                            comments.splice(i, 1);
+                            return true;
+                        }
+                        if(comments[i].replies && removeCommentRecursive(comments[i].replies)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                const newComments = [...(post.comments || [])];
+                removeCommentRecursive(newComments);
+                await updateDoc(postRef, { comments: newComments });
+            }
+        }
+
+        async function addReplyToComment(postId, parentCommentId, replyText) {
+            const postRef = doc(db, "posts", postId);
+            const postSnap = await getDoc(postRef);
+            if(postSnap.exists()) {
+                const post = postSnap.data();
+                const addReplyRecursive = (comments) => {
+                    for(let c of comments) {
+                        if(c.id === parentCommentId) {
+                            if(!c.replies) c.replies = [];
+                            c.replies.push({
+                                id: Date.now().toString() + Math.random(),
+                                text: replyText,
+                                author: currentUser.nickname,
+                                date: Date.now(),
+                                replies: []
+                            });
+                            return true;
+                        }
+                        if(c.replies && addReplyRecursive(c.replies)) return true;
+                    }
+                    return false;
+                };
+                const newComments = [...(post.comments || [])];
+                addReplyRecursive(newComments);
+                await updateDoc(postRef, { comments: newComments });
             }
         }
 
@@ -76,15 +251,15 @@
                 postDiv.innerHTML = `
                     <div class="post-header">
                         <div class="post-author">
-                            <div class="avatar">${post.authorAvatar || '👤'}</div>
+                            <div class="avatar">👤</div>
                             <span class="author-name">@${escapeHtml(post.authorNick)}</span>
                         </div>
-                        ${(isAdmin || currentUser.nickname === post.authorNick) ? `<button class="delete-post" data-id="${post.id}">🗑 Удалить</button>` : ''}
+                        ${(isAdmin || currentUser.nickname === post.authorNick) ? `<button class="delete-post" data-id="${post.id}">🗑 Удалить пост</button>` : ''}
                     </div>
                     <div class="post-title">${escapeHtml(post.title)}</div>
                     <div class="post-text">${escapeHtml(post.text).replace(/\n/g, '<br>')}</div>
                     <div class="comments-section" id="comments-${post.id}">
-                        <div class="comments-list" id="comments-list-${post.id}">${renderCommentsList(post.comments || [])}</div>
+                        <div class="comments-list" id="comments-list-${post.id}">${renderCommentsTree(post.comments || [], post.id)}</div>
                         <div class="add-comment">
                             <input type="text" class="comment-input" id="comment-input-${post.id}" placeholder="Ваш комментарий (макс 1000 символов)" maxlength="1000">
                             <button class="comment-submit" data-id="${post.id}">💬 Отправить</button>
@@ -108,42 +283,46 @@
                     const text = input.value.trim();
                     if(text && text.length <= 1000 && text.length > 0) {
                         const postRef = doc(db, "posts", postId);
-                        await updateDoc(postRef, {
-                            comments: arrayUnion({
-                                author: currentUser.nickname,
+                        const postSnap = await getDoc(postRef);
+                        if(postSnap.exists()) {
+                            const post = postSnap.data();
+                            const newComments = [...(post.comments || [])];
+                            newComments.push({
+                                id: Date.now().toString() + Math.random(),
                                 text: text,
-                                date: Date.now()
-                            })
-                        });
+                                author: currentUser.nickname,
+                                date: Date.now(),
+                                replies: []
+                            });
+                            await updateDoc(postRef, { comments: newComments });
+                        }
                         input.value = '';
                     } else {
                         alert('Комментарий от 1 до 1000 символов');
                     }
                 });
             });
-        }
 
-        function renderCommentsList(comments) {
-            if(!comments || comments.length === 0) return '<div style="color:#555;">💬 Нет комментариев. Будьте первым!</div>';
-            let html = '<div style="margin-bottom:10px;"><strong>Комментарии:</strong></div>';
-            comments.forEach(c => {
-                html += `
-                    <div class="comment">
-                        <div class="comment-author">@${escapeHtml(c.author)}</div>
-                        <div class="comment-text">${escapeHtml(c.text)}</div>
-                    </div>
-                `;
+            document.querySelectorAll('.delete-comment').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const postId = btn.getAttribute('data-post-id');
+                    const commentId = btn.getAttribute('data-comment-id');
+                    await deleteCommentById(postId, commentId);
+                });
             });
-            return html;
-        }
 
-        function escapeHtml(str) {
-            if(!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if(m === '&') return '&amp;';
-                if(m === '<') return '&lt;';
-                if(m === '>') return '&gt;';
-                return m;
+            document.querySelectorAll('.reply-to-comment').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const postId = btn.getAttribute('data-post-id');
+                    const commentId = btn.getAttribute('data-comment-id');
+                    const author = btn.getAttribute('data-author');
+                    const replyText = prompt(`Ответ @${author}:`, '');
+                    if(replyText && replyText.trim() && replyText.length <= 1000) {
+                        addReplyToComment(postId, commentId, replyText.trim());
+                    } else if(replyText && replyText.length > 1000) {
+                        alert('Ответ не может быть длиннее 1000 символов');
+                    }
+                });
             });
         }
 
@@ -155,7 +334,6 @@
                 title: title,
                 text: text,
                 authorNick: currentUser.nickname,
-                authorAvatar: '👤',
                 date: Timestamp.now(),
                 comments: []
             });
@@ -170,7 +348,11 @@
                     posts.push({ id: doc.id, ...doc.data() });
                 });
                 allPosts = posts;
-                renderPosts(allPosts);
+                if(currentView === 'posts') {
+                    renderPosts(allPosts);
+                } else {
+                    renderAllDiscussions();
+                }
             });
         }
 
@@ -200,34 +382,13 @@
                     isAdmin = false;
                     sidebarRole.innerText = 'Пользователь';
                 }
-                renderPosts(allPosts);
+                if(currentView === 'posts') {
+                    renderPosts(allPosts);
+                } else {
+                    renderAllDiscussions();
+                }
             }
             document.getElementById('profileModal').style.display = 'none';
-        }
-
-        function showUserList() {
-            const usersMap = new Map();
-            allPosts.forEach(post => {
-                if(!usersMap.has(post.authorNick)) {
-                    usersMap.set(post.authorNick, {
-                        nickname: post.authorNick,
-                        avatar: post.authorAvatar || '👤',
-                        firstPostTitle: post.title
-                    });
-                }
-            });
-            const container = document.getElementById('userListContainer');
-            container.innerHTML = '';
-            usersMap.forEach(user => {
-                const userDiv = document.createElement('div');
-                userDiv.className = 'user-item';
-                userDiv.innerHTML = `
-                    <strong>@${escapeHtml(user.nickname)}</strong><br>
-                    📝 Первый пост: ${escapeHtml(user.firstPostTitle.substring(0, 50))}
-                `;
-                container.appendChild(userDiv);
-            });
-            infoModal.style.display = 'flex';
         }
 
         (async function init() {
@@ -235,7 +396,14 @@
             subscribeToPosts();
 
             createPostBtn.onclick = () => postModal.style.display = 'flex';
-            viewPostsBtn.onclick = () => postsContainer.scrollIntoView({ behavior: 'smooth' });
+            viewPostsBtn.onclick = () => {
+                currentView = 'posts';
+                renderPosts(allPosts);
+            };
+            discussionsBtn.onclick = () => {
+                currentView = 'discussions';
+                renderAllDiscussions();
+            };
             profileBtn.onclick = openProfileModal;
             document.getElementById('saveProfile').onclick = saveProfile;
             document.getElementById('submitPost').onclick = async () => {
@@ -246,7 +414,9 @@
                 document.getElementById('postTitle').value = '';
                 document.getElementById('postText').value = '';
             };
-            document.getElementById('infoBtn').onclick = showUserList;
+            document.getElementById('infoBtn').onclick = () => {
+                alert('Инфо: Админ-код RAZRABOTCHIK212');
+            };
 
             document.querySelectorAll('.close, .close-profile, .close-info').forEach(btn => {
                 btn.onclick = function() {
@@ -274,7 +444,7 @@
         .posts-area { flex: 3; }
         .sidebar { flex: 1; position: sticky; top: 80px; height: fit-content; background: #0a0a0a; padding: 15px; border: 1px solid #222; }
         .action-buttons { display: flex; gap: 15px; margin-bottom: 30px; }
-        .create-post-btn, .view-posts-btn { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 12px 24px; cursor: pointer; font-family: monospace; }
+        .create-post-btn, .view-posts-btn, .discussions-btn { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 12px 24px; cursor: pointer; font-family: monospace; }
         .post-card { background: #0c0c0c; border: 1px solid #222; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .post-header { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 15px; }
         .post-author { display: flex; gap: 12px; align-items: center; }
@@ -285,16 +455,25 @@
         .delete-post { background: none; border: 1px solid #f33; color: #f66; padding: 5px 12px; cursor: pointer; }
         .comments-section { margin-top: 20px; border-top: 1px solid #222; padding-top: 15px; }
         .comment { background: #111; padding: 10px; margin: 10px 0; border-radius: 8px; }
+        .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .comment-author { color: #0f0; font-size: 14px; }
+        .comment-text { color: #ddd; margin: 5px 0; }
+        .comment-actions { margin-top: 5px; }
+        .reply-to-comment, .reply-to-discussion { background: none; border: 1px solid #555; color: #aaa; padding: 2px 8px; cursor: pointer; font-size: 12px; }
+        .delete-comment, .delete-discussion-comment { background: none; border: none; color: #f66; cursor: pointer; font-size: 12px; margin-left: 10px; }
         .add-comment { display: flex; gap: 10px; margin-top: 10px; }
         .comment-input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: white; padding: 8px; }
         .comment-submit { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 6px 12px; cursor: pointer; }
+        .discussion-card { background: #0c0c0c; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .discussion-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .discussion-text { margin: 8px 0; }
+        .discussion-meta { font-size: 12px; color: #888; margin-top: 8px; }
+        .discussion-meta a { color: #0f0; text-decoration: none; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #0a0a0a; border: 1px solid #0f0; padding: 30px; width: 90%; max-width: 600px; border-radius: 12px; }
         .modal-content input, .modal-content textarea { width: 100%; background: #111; border: 1px solid #333; color: white; padding: 10px; margin: 10px 0; }
         .modal-content textarea { min-height: 200px; }
         .close, .close-profile, .close-info { float: right; font-size: 28px; cursor: pointer; color: #f00; }
-        .user-list { max-height: 400px; overflow-y: auto; }
-        .user-item { border-bottom: 1px solid #222; padding: 10px; }
         @media (max-width: 768px) { .main-container { flex-direction: column; } }
     </style>
 </head>
@@ -311,6 +490,7 @@
     <div class="posts-area">
         <div class="action-buttons">
             <button class="create-post-btn" id="createPostBtn">✏️ Создать пост</button>
+            <button class="discussions-btn" id="discussionsBtn">💬 Обсуждения</button>
             <button class="view-posts-btn" id="viewPostsBtn">📰 Смотреть посты</button>
         </div>
         <div id="postsContainer">Загрузка...</div>
@@ -338,14 +518,6 @@
         <h2>👤 Профиль</h2>
         <input type="text" id="nicknameInput" placeholder="@никнейм (англ/цифры/-, 1-20 символов)">
         <button id="saveProfile">Сохранить</button>
-    </div>
-</div>
-
-<div id="infoModal" class="modal">
-    <div class="modal-content">
-        <span class="close-info">&times;</span>
-        <h2>📋 Пользователи</h2>
-        <div id="userListContainer"></div>
     </div>
 </div>
 
