@@ -36,6 +36,7 @@
         const infoModal = document.getElementById('infoModal');
         const sidebarNick = document.getElementById('sidebarNick');
         const sidebarRole = document.getElementById('sidebarRole');
+        const infoBtn = document.getElementById('infoBtn');
 
         async function getUserIP() {
             try {
@@ -97,9 +98,11 @@
             if(currentUser.nickname === 'SWILL_ADMIN') {
                 isAdmin = true;
                 sidebarRole.innerText = '👑 АДМИН';
+                infoBtn.style.display = 'inline-block';
             } else {
                 isAdmin = false;
                 sidebarRole.innerText = 'Пользователь';
+                infoBtn.style.display = 'none';
             }
         }
 
@@ -166,54 +169,40 @@
             return date.toLocaleString();
         }
 
-        function renderCommentsTree(comments, postId, level = 0) {
-            if(!comments || comments.length === 0) return '<div style="color:#555; margin-left: 20px;">💬 Нет комментариев. Будьте первым!</div>';
-            let html = '';
-            comments.forEach(c => {
-                const canDelete = isAdmin || c.author === currentUser.nickname;
-                const marginLeft = level * 20;
-                html += `
-                    <div class="comment" style="margin-left: ${marginLeft}px;" data-comment-id="${c.id}">
-                        <div class="comment-header">
-                            <strong class="comment-author">@${escapeHtml(c.author)}</strong>
-                            <span class="comment-date">${formatDate(c.date)}</span>
-                            ${canDelete ? `<button class="delete-comment" data-post-id="${postId}" data-comment-id="${c.id}">🗑</button>` : ''}
-                        </div>
-                        <div class="comment-text">${escapeHtml(c.text)}</div>
-                        <div class="comment-actions">
-                            <button class="reply-to-comment" data-post-id="${postId}" data-comment-id="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button>
-                        </div>
-                        ${c.replies && c.replies.length > 0 ? renderCommentsTree(c.replies, postId, level + 1) : ''}
-                    </div>
-                `;
-            });
-            return html;
-        }
-
-        async function addReplyToComment(postId, parentCommentId, replyText) {
+        async function addCommentToPost(postId, text, parentCommentId = null) {
             const postRef = doc(db, "posts", postId);
             const postSnap = await getDoc(postRef);
             if(postSnap.exists()) {
                 const post = postSnap.data();
-                const addReplyRecursive = (comments) => {
-                    for(let c of comments) {
-                        if(c.id === parentCommentId) {
-                            if(!c.replies) c.replies = [];
-                            c.replies.push({
-                                id: Date.now().toString() + Math.random(),
-                                text: replyText,
-                                author: currentUser.nickname,
-                                date: Date.now(),
-                                replies: []
-                            });
-                            return true;
-                        }
-                        if(c.replies && addReplyRecursive(c.replies)) return true;
-                    }
-                    return false;
+                const newComment = {
+                    id: Date.now().toString() + Math.random(),
+                    text: text,
+                    author: currentUser.nickname,
+                    date: Date.now(),
+                    replies: []
                 };
-                const newComments = JSON.parse(JSON.stringify(post.comments || []));
-                addReplyRecursive(newComments);
+                
+                let newComments = JSON.parse(JSON.stringify(post.comments || []));
+                
+                if(parentCommentId) {
+                    // Добавляем как ответ на существующий комментарий
+                    const addReplyRecursive = (comments) => {
+                        for(let c of comments) {
+                            if(c.id === parentCommentId) {
+                                if(!c.replies) c.replies = [];
+                                c.replies.push(newComment);
+                                return true;
+                            }
+                            if(c.replies && addReplyRecursive(c.replies)) return true;
+                        }
+                        return false;
+                    };
+                    addReplyRecursive(newComments);
+                } else {
+                    // Добавляем как корневой комментарий
+                    newComments.push(newComment);
+                }
+                
                 await updateDoc(postRef, { comments: newComments });
             }
         }
@@ -241,7 +230,32 @@
             }
         }
 
+        function renderCommentsTree(comments, postId, level = 0) {
+            if(!comments || comments.length === 0) return '';
+            let html = '';
+            comments.forEach(c => {
+                const canDelete = isAdmin || c.author === currentUser.nickname;
+                const marginLeft = level * 20;
+                html += `
+                    <div class="comment" style="margin-left: ${marginLeft}px;" data-comment-id="${c.id}">
+                        <div class="comment-header">
+                            <strong class="comment-author">@${escapeHtml(c.author)}</strong>
+                            <span class="comment-date">${formatDate(c.date)}</span>
+                            ${canDelete ? `<button class="delete-comment" data-post-id="${postId}" data-comment-id="${c.id}">🗑</button>` : ''}
+                        </div>
+                        <div class="comment-text">${escapeHtml(c.text)}</div>
+                        <div class="comment-actions">
+                            <button class="reply-to-comment" data-post-id="${postId}" data-comment-id="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button>
+                        </div>
+                        ${c.replies && c.replies.length > 0 ? renderCommentsTree(c.replies, postId, level + 1) : ''}
+                    </div>
+                `;
+            });
+            return html;
+        }
+
         function renderAllDiscussions() {
+            // Собираем все комментарии плоским списком
             let allCommentsFlat = [];
             allPosts.forEach(post => {
                 if(post.comments && post.comments.length > 0) {
@@ -266,12 +280,36 @@
             });
             allCommentsFlat.sort((a, b) => (b.date || 0) - (a.date || 0));
 
+            let html = `
+                <div class="discussions-header">
+                    <h3>💬 Обсуждения</h3>
+                    <div class="new-discussion-comment">
+                        <input type="text" id="newDiscussionCommentInput" placeholder="Написать новый комментарий (к последнему посту)" maxlength="1000">
+                        <button id="submitNewDiscussionComment">✏️ Опубликовать комментарий</button>
+                    </div>
+                </div>
+            `;
+
             if(allCommentsFlat.length === 0) {
-                postsContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#888;">💬 Нет комментариев. Напишите первый!</div>';
+                html += '<div style="text-align:center; padding:50px; color:#888;">💬 Нет комментариев. Напишите первый!</div>';
+                postsContainer.innerHTML = html;
+                
+                document.getElementById('submitNewDiscussionComment')?.addEventListener('click', async () => {
+                    const input = document.getElementById('newDiscussionCommentInput');
+                    const text = input.value.trim();
+                    if(text && text.length <= 1000 && allPosts.length > 0) {
+                        await addCommentToPost(allPosts[0].id, text);
+                        input.value = '';
+                    } else if(allPosts.length === 0) {
+                        alert('Сначала создайте хотя бы один пост');
+                    } else if(!text) {
+                        alert('Введите текст комментария');
+                    }
+                });
                 return;
             }
 
-            let html = '<div class="discussions-list">';
+            html += '<div class="discussions-list">';
             allCommentsFlat.forEach(comment => {
                 const canDelete = isAdmin || comment.author === currentUser.nickname;
                 html += `
@@ -296,6 +334,7 @@
             html += '</div>';
             postsContainer.innerHTML = html;
 
+            // Навигация к посту
             document.querySelectorAll('.goto-post').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -309,6 +348,7 @@
                 });
             });
 
+            // Удаление комментария из обсуждений
             document.querySelectorAll('.delete-discussion-comment').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const postId = btn.getAttribute('data-post-id');
@@ -317,6 +357,7 @@
                 });
             });
 
+            // Ответ на комментарий из обсуждений
             document.querySelectorAll('.reply-to-discussion').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const postId = btn.getAttribute('data-post-id');
@@ -324,11 +365,25 @@
                     const author = btn.getAttribute('data-author');
                     const replyText = prompt(`Ответ @${author}:`, '');
                     if(replyText && replyText.trim() && replyText.length <= 1000) {
-                        addReplyToComment(postId, parentCommentId, replyText.trim());
+                        addCommentToPost(postId, replyText.trim(), parentCommentId);
                     } else if(replyText && replyText.length > 1000) {
                         alert('Ответ не может быть длиннее 1000 символов');
                     }
                 });
+            });
+
+            // Новый комментарий в обсуждениях (к последнему посту)
+            document.getElementById('submitNewDiscussionComment')?.addEventListener('click', async () => {
+                const input = document.getElementById('newDiscussionCommentInput');
+                const text = input.value.trim();
+                if(text && text.length <= 1000 && allPosts.length > 0) {
+                    await addCommentToPost(allPosts[0].id, text);
+                    input.value = '';
+                } else if(allPosts.length === 0) {
+                    alert('Сначала создайте хотя бы один пост');
+                } else if(!text) {
+                    alert('Введите текст комментария');
+                }
             });
         }
 
@@ -355,8 +410,8 @@
                     </div>
                     <div class="post-title">${escapeHtml(post.title)}</div>
                     <div class="post-text">${escapeHtml(post.text).replace(/\n/g, '<br>')}</div>
-                    <div class="comments-section" id="comments-${post.id}">
-                        <div class="comments-list" id="comments-list-${post.id}">${renderCommentsTree(post.comments || [], post.id)}</div>
+                    <div class="comments-section">
+                        <div class="comments-list">${renderCommentsTree(post.comments || [], post.id)}</div>
                         <div class="add-comment">
                             <input type="text" class="comment-input" id="comment-input-${post.id}" placeholder="Ваш комментарий (макс 1000 символов)" maxlength="1000">
                             <button class="comment-submit" data-id="${post.id}">💬 Отправить</button>
@@ -366,6 +421,7 @@
                 postsContainer.appendChild(postDiv);
             });
 
+            // Удаление поста
             document.querySelectorAll('.delete-post').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = btn.getAttribute('data-id');
@@ -373,26 +429,14 @@
                 });
             });
 
+            // Новый комментарий к посту
             document.querySelectorAll('.comment-submit').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const postId = btn.getAttribute('data-id');
                     const input = document.getElementById(`comment-input-${postId}`);
                     const text = input.value.trim();
                     if(text && text.length <= 1000 && text.length > 0) {
-                        const postRef = doc(db, "posts", postId);
-                        const postSnap = await getDoc(postRef);
-                        if(postSnap.exists()) {
-                            const post = postSnap.data();
-                            const newComments = JSON.parse(JSON.stringify(post.comments || []));
-                            newComments.push({
-                                id: Date.now().toString() + Math.random(),
-                                text: text,
-                                author: currentUser.nickname,
-                                date: Date.now(),
-                                replies: []
-                            });
-                            await updateDoc(postRef, { comments: newComments });
-                        }
+                        await addCommentToPost(postId, text);
                         input.value = '';
                     } else {
                         alert('Комментарий от 1 до 1000 символов');
@@ -400,6 +444,7 @@
                 });
             });
 
+            // Удаление комментария
             document.querySelectorAll('.delete-comment').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const postId = btn.getAttribute('data-post-id');
@@ -408,6 +453,7 @@
                 });
             });
 
+            // Ответ на комментарий
             document.querySelectorAll('.reply-to-comment').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const postId = btn.getAttribute('data-post-id');
@@ -415,7 +461,7 @@
                     const author = btn.getAttribute('data-author');
                     const replyText = prompt(`Ответ @${author}:`, '');
                     if(replyText && replyText.trim() && replyText.length <= 1000) {
-                        addReplyToComment(postId, commentId, replyText.trim());
+                        addCommentToPost(postId, replyText.trim(), commentId);
                     } else if(replyText && replyText.length > 1000) {
                         alert('Ответ не может быть длиннее 1000 символов');
                     }
@@ -469,21 +515,18 @@
                 return;
             }
             if(newNick && newNick !== currentUser.nickname) {
-                // Проверяем уникальность
                 const userRef = doc(db, "users", newNick);
                 getDoc(userRef).then(async (snap) => {
                     if(snap.exists()) {
                         alert('Никнейм уже занят');
                     } else {
                         const oldNick = currentUser.nickname;
-                        // Создаём нового пользователя
                         const ip = await getUserIP();
                         await setDoc(doc(db, "users", newNick), {
                             nickname: newNick,
                             ip: ip,
                             firstSeen: Timestamp.now()
                         });
-                        // Удаляем старого
                         await deleteDoc(doc(db, "users", oldNick));
                         currentUser.nickname = newNick;
                         localStorage.setItem('nowosty1_user_nick', newNick);
@@ -491,9 +534,11 @@
                         if(newNick === 'SWILL_ADMIN') {
                             isAdmin = true;
                             sidebarRole.innerText = '👑 АДМИН';
+                            infoBtn.style.display = 'inline-block';
                         } else {
                             isAdmin = false;
                             sidebarRole.innerText = 'Пользователь';
+                            infoBtn.style.display = 'none';
                         }
                         if(currentView === 'posts') {
                             renderPosts(allPosts);
@@ -532,7 +577,7 @@
                 document.getElementById('postTitle').value = '';
                 document.getElementById('postText').value = '';
             };
-            document.getElementById('infoBtn').onclick = showUserList;
+            if(infoBtn) infoBtn.onclick = showUserList;
 
             document.querySelectorAll('.close, .close-profile, .close-info').forEach(btn => {
                 btn.onclick = function() {
@@ -551,39 +596,45 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; color: #eee; font-family: 'Segoe UI', monospace; }
-        .top-bar { background: #0a0a0a; border-bottom: 1px solid #222; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .left-area { display: flex; gap: 15px; align-items: center; }
-        .admin-input { background: #111; border: 1px solid #333; color: #0f0; padding: 6px 10px; font-family: monospace; width: 180px; }
-        .info-btn, .check-admin { background: #1a1a1a; border: 1px solid #333; color: #0f0; padding: 6px 12px; cursor: pointer; }
+        .top-bar { background: #0a0a0a; border-bottom: 1px solid #222; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 10px; }
+        .left-area { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .admin-input { background: #111; border: 1px solid #333; color: #0f0; padding: 6px 10px; font-family: monospace; width: 180px; border-radius: 6px; }
+        .info-btn, .check-admin { background: #1a1a1a; border: 1px solid #333; color: #0f0; padding: 6px 12px; cursor: pointer; border-radius: 6px; }
         .profile-btn { background: #111; border: 1px solid #444; color: #fff; padding: 8px 20px; border-radius: 30px; cursor: pointer; }
         .main-container { display: flex; max-width: 1400px; margin: 0 auto; padding: 20px; gap: 20px; }
         .posts-area { flex: 3; }
-        .sidebar { flex: 1; position: sticky; top: 80px; height: fit-content; background: #0a0a0a; padding: 15px; border: 1px solid #222; }
+        .sidebar { flex: 1; position: sticky; top: 80px; height: fit-content; background: #0a0a0a; padding: 15px; border: 1px solid #222; border-radius: 12px; }
         .action-buttons { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
-        .create-post-btn, .view-posts-btn, .discussions-btn { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 12px 24px; cursor: pointer; font-family: monospace; }
+        .create-post-btn, .view-posts-btn, .discussions-btn { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 12px 24px; cursor: pointer; font-family: monospace; border-radius: 8px; transition: 0.2s; }
+        .create-post-btn:hover, .view-posts-btn:hover, .discussions-btn:hover { background: #1a3a1a; }
         .post-card { background: #0c0c0c; border: 1px solid #222; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .post-header { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .post-header { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .post-author { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; background: #1a1a1a; display: flex; align-items: center; justify-content: center; font-size: 24px; }
         .author-name { color: #0f0; font-weight: bold; }
         .post-date { color: #666; font-size: 12px; margin-left: 10px; }
         .post-title { font-size: 24px; font-weight: bold; margin: 15px 0; }
         .post-text { color: #ccc; line-height: 1.5; margin: 15px 0; white-space: pre-wrap; }
-        .delete-post { background: none; border: 1px solid #f33; color: #f66; padding: 5px 12px; cursor: pointer; }
+        .delete-post { background: none; border: 1px solid #f33; color: #f66; padding: 5px 12px; cursor: pointer; border-radius: 6px; }
         .comments-section { margin-top: 20px; border-top: 1px solid #222; padding-top: 15px; }
         .comment { background: #111; padding: 10px; margin: 10px 0; border-radius: 8px; }
-        .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; }
+        .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-wrap: wrap; gap: 8px; }
         .comment-author { color: #0f0; font-size: 14px; }
-        .comment-date { color: #666; font-size: 11px; margin-left: 8px; }
+        .comment-date { color: #666; font-size: 11px; }
         .comment-text { color: #ddd; margin: 5px 0; word-break: break-word; }
         .comment-actions { margin-top: 5px; }
-        .reply-to-comment, .reply-to-discussion { background: none; border: 1px solid #555; color: #aaa; padding: 2px 8px; cursor: pointer; font-size: 12px; border-radius: 4px; }
-        .delete-comment, .delete-discussion-comment { background: none; border: none; color: #f66; cursor: pointer; font-size: 14px; margin-left: 10px; }
+        .reply-to-comment, .reply-to-discussion { background: none; border: 1px solid #555; color: #aaa; padding: 4px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; transition: 0.2s; }
+        .reply-to-comment:hover, .reply-to-discussion:hover { background: #2a2a2a; color: #fff; }
+        .delete-comment, .delete-discussion-comment { background: none; border: none; color: #f66; cursor: pointer; font-size: 16px; padding: 0 5px; }
         .add-comment { display: flex; gap: 10px; margin-top: 10px; }
-        .comment-input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: white; padding: 8px; border-radius: 6px; }
-        .comment-submit { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 6px 12px; cursor: pointer; border-radius: 6px; }
+        .comment-input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 6px; }
+        .comment-submit { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 8px 16px; cursor: pointer; border-radius: 6px; }
+        .discussions-header { margin-bottom: 20px; }
+        .new-discussion-comment { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 20px; }
+        .new-discussion-comment input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: white; padding: 12px; border-radius: 8px; }
+        .new-discussion-comment button { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 12px 20px; cursor: pointer; border-radius: 8px; }
         .discussion-card { background: #0c0c0c; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .discussion-header { display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; }
+        .discussion-header { display: flex; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
         .discussion-text { margin: 8px 0; word-break: break-word; }
         .discussion-meta { font-size: 12px; color: #888; margin-top: 8px; }
         .discussion-meta a { color: #0f0; text-decoration: none; }
@@ -593,7 +644,7 @@
         .modal-content input, .modal-content textarea { width: 100%; background: #111; border: 1px solid #333; color: white; padding: 10px; margin: 10px 0; border-radius: 6px; }
         .modal-content textarea { min-height: 200px; }
         .close, .close-profile, .close-info { float: right; font-size: 28px; cursor: pointer; color: #f00; }
-        @media (max-width: 768px) { .main-container { flex-direction: column; } .action-buttons { flex-direction: column; } }
+        @media (max-width: 768px) { .main-container { flex-direction: column; } .action-buttons { flex-direction: column; } .top-bar { flex-direction: column; } .left-area { width: 100%; justify-content: space-between; } }
     </style>
 </head>
 <body>
@@ -601,7 +652,7 @@
     <div class="left-area">
         <input type="text" id="adminCode" class="admin-input" placeholder="Код у создателя">
         <button class="check-admin" id="checkAdminBtn">Стать админом</button>
-        <button class="info-btn" id="infoBtn">📋 Инфо</button>
+        <button class="info-btn" id="infoBtn" style="display: none;">📋 Инфо</button>
     </div>
     <button class="profile-btn" id="profileBtn">👤 Профиль</button>
 </div>
