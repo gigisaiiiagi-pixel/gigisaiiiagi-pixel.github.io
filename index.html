@@ -16,8 +16,9 @@
         button { background: none; border: none; cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 14px; transition: 0.2s; }
         .btn-green { border: 1px solid #0f0; color: #0f0; background: transparent; }
         .btn-green:hover { background: #0f0; color: #000; }
-        .delete-post-btn, .delete-comment-btn { background: #ff3333 !important; color: white !important; border: 1px solid #ff6666 !important; font-weight: bold; }
-        .delete-post-btn:hover, .delete-comment-btn:hover { background: #cc0000 !important; }
+        .delete-post-btn { background: #ff3333 !important; color: white !important; border: 1px solid #ff6666 !important; font-weight: bold; padding: 4px 12px !important; border-radius: 20px !important; cursor: pointer; }
+        .delete-post-btn:hover { background: #cc0000 !important; }
+        .delete-comment-btn { background: #ff3333 !important; color: white !important; border: none !important; padding: 2px 8px !important; border-radius: 12px !important; cursor: pointer; font-size: 12px; }
         .main-container { display: flex; max-width: 1300px; margin: 0 auto; padding: 20px; gap: 20px; }
         .posts-area { flex: 3; }
         .sidebar { flex: 1; position: sticky; top: 80px; height: fit-content; padding: 15px; border-radius: 16px; border: 1px solid; }
@@ -31,7 +32,7 @@
         .post-title { font-size: 22px; font-weight: bold; margin: 12px 0; }
         .post-text, .comment-text { line-height: 1.4; margin: 12px 0; white-space: pre-wrap; }
         .post-actions, .comment-actions { display: flex; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
-        .like-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 30px; border: 1px solid; cursor: pointer; }
+        .like-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 30px; border: 1px solid; cursor: pointer; background: transparent; }
         .like-btn.active { color: #e0245e; border-color: #e0245e; }
         .like-count { font-size: 13px; cursor: pointer; }
         .private-badge { background: #ff9900; color: #000; padding: 2px 8px; border-radius: 20px; font-size: 10px; margin-left: 8px; }
@@ -65,6 +66,7 @@
         .close { float: right; font-size: 28px; cursor: pointer; line-height: 20px; }
         .user-search-input { width: 100%; margin-bottom: 10px; }
         .all-users-btn { width: 100%; margin-bottom: 10px; }
+        .edit-post-btn { background: none; border: 1px solid #0f0; color: #0f0; padding: 4px 10px; border-radius: 20px; cursor: pointer; margin-right: 5px; }
         @media (max-width: 700px) { .main-container { flex-direction: column; } .chat-users { width: 100%; border-right: none; border-bottom: 1px solid; margin-bottom: 10px; } }
     </style>
 </head>
@@ -104,27 +106,27 @@
 </div>
 
 <!-- Модалки -->
-<div id="postModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>Новый пост</h2>
-<input type="text" id="postTitle" placeholder="Название (макс 100)" maxlength="100">
-<textarea id="postText" rows="5" placeholder="Текст (макс 10000)" maxlength="10000"></textarea>
-<label><input type="checkbox" id="postPrivate"> 🔒 Только для админа</label><br><br>
-<button id="submitPostBtn" class="btn-green">Опубликовать</button></div></div>
+<div id="postModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>📝 Новый пост</h2>
+<input type="text" id="postTitle" placeholder="Заголовок (макс 100 символов)" maxlength="100" style="width:100%; padding:10px; margin:10px 0; border-radius:12px; border:1px solid; background:transparent;">
+<textarea id="postText" rows="6" placeholder="Текст поста (макс 10000 символов)" maxlength="10000" style="width:100%; padding:10px; margin:10px 0; border-radius:12px; border:1px solid; background:transparent; resize:vertical;"></textarea>
+<label style="display:flex; align-items:center; gap:8px; margin:10px 0;"><input type="checkbox" id="postPrivate"> 🔒 Только для админа</label>
+<button id="submitPostBtn" class="btn-green" style="width:100%; padding:10px;">🚀 Опубликовать</button></div></div>
 
-<div id="editPostModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>Редактировать пост</h2>
-<input type="text" id="editPostTitle" maxlength="100">
-<textarea id="editPostText" rows="5" maxlength="10000"></textarea>
+<div id="editPostModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>✏️ Редактировать пост</h2>
+<input type="text" id="editPostTitle" maxlength="100" style="width:100%; padding:10px; margin:10px 0; border-radius:12px; border:1px solid; background:transparent;">
+<textarea id="editPostText" rows="6" maxlength="10000" style="width:100%; padding:10px; margin:10px 0; border-radius:12px; border:1px solid; background:transparent; resize:vertical;"></textarea>
 <input type="hidden" id="editPostId">
-<button id="saveEditPost" class="btn-green">Сохранить</button></div></div>
+<button id="saveEditPost" class="btn-green" style="width:100%; padding:10px;">💾 Сохранить</button></div></div>
 
-<div id="editCommentModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>Редактировать комментарий</h2>
-<textarea id="editCommentText" rows="3" maxlength="1000"></textarea>
+<div id="editCommentModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>✏️ Редактировать комментарий</h2>
+<textarea id="editCommentText" rows="3" maxlength="1000" style="width:100%; padding:10px; margin:10px 0; border-radius:12px; border:1px solid; background:transparent; resize:vertical;"></textarea>
 <input type="hidden" id="editCommentPostId"><input type="hidden" id="editCommentId">
-<button id="saveEditComment" class="btn-green">Сохранить</button></div></div>
+<button id="saveEditComment" class="btn-green" style="width:100%; padding:10px;">💾 Сохранить</button></div></div>
 
 <div id="profileModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>👤 Редактировать профиль</h2>
 <div id="avatarSelect" class="avatar-select"></div>
-<input type="text" id="nicknameInput" placeholder="Ник (a-z0-9-, 1-20)" maxlength="20">
-<button id="saveProfileBtn" class="btn-green">Сохранить</button></div></div>
+<input type="text" id="nicknameInput" placeholder="Ник (a-z0-9-, 1-20)" maxlength="20" style="width:100%; padding:10px; margin:10px 0; border-radius:12px; border:1px solid; background:transparent;">
+<button id="saveProfileBtn" class="btn-green" style="width:100%; padding:10px;">💾 Сохранить</button></div></div>
 
 <div id="infoModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>📋 Все пользователи (только админ)</h2>
 <div id="userListContainer"></div></div></div>
@@ -134,7 +136,7 @@
 
 <div id="chatModal" class="modal"><div class="chat-modal-content"><span class="close">&times;</span><h3>💬 Личные сообщения</h3>
 <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
-    <input type="text" id="chatUserSearch" class="user-search-input" placeholder="🔍 Поиск пользователей по нику...">
+    <input type="text" id="chatUserSearch" class="user-search-input" placeholder="🔍 Поиск пользователей по нику..." style="flex:1;">
     <button id="showAllUsersBtn" class="btn-green">📋 Все пользователи</button>
 </div>
 <div class="chat-layout">
@@ -151,7 +153,7 @@
 <div id="allUsersModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>📋 Все зарегистрированные пользователи</h2>
 <input type="text" id="allUsersSearch" class="user-search-input" placeholder="🔍 Поиск...">
 <div id="allUsersList" style="max-height:400px; overflow-y:auto;"></div>
-<button id="startChatFromList" class="btn-green" style="margin-top:10px">💬 Начать чат с выбранным</button></div></div>
+<button id="startChatFromList" class="btn-green" style="margin-top:10px; width:100%;">💬 Начать чат с выбранным</button></div></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -310,9 +312,9 @@
             const likesCount = Object.keys(c.likes || {}).length;
             const userLiked = c.likes && c.likes[currentUser.nickname];
             html += `<div class="comment" style="margin-left:${level*20}px">
-                <div style="display:flex; justify-content:space-between; flex-wrap:wrap">
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center;">
                     <div><strong class="author-name">@${escapeHtml(c.author)}</strong> <span class="comment-date">${formatDate(c.date)}</span></div>
-                    <div>${canEdit ? `<button class="edit-comment-btn" data-post="${postId}" data-comment="${c.id}" data-text="${escapeHtml(c.text)}" style="margin-right:5px">✏️</button>` : ''}${canDelete ? `<button class="delete-comment-btn" data-post="${postId}" data-comment="${c.id}">🗑</button>` : ''}</div>
+                    <div>${canEdit ? `<button class="edit-comment-btn" data-post="${postId}" data-comment="${c.id}" data-text="${escapeHtml(c.text)}" style="background:none; border:1px solid #0f0; color:#0f0; padding:2px 8px; border-radius:12px; margin-right:5px; cursor:pointer;">✏️</button>` : ''}${canDelete ? `<button class="delete-comment-btn" data-post="${postId}" data-comment="${c.id}">🗑</button>` : ''}</div>
                 </div>
                 <div class="comment-text">${escapeHtml(c.text)}</div>
                 <div class="comment-actions">
@@ -347,7 +349,7 @@
                         <span class="post-date">${formatDate(post.date)}</span>
                         ${post.private ? '<span class="private-badge">🔒 Только админ</span>' : ''}
                     </div>
-                    <div>${canEdit ? `<button class="edit-post" data-id="${post.id}" data-title="${escapeHtml(post.title)}" data-text="${escapeHtml(post.text)}">✏️</button>` : ''}${canDelete ? `<button class="delete-post-btn" data-id="${post.id}">🗑 Удалить</button>` : ''}</div>
+                    <div>${canEdit ? `<button class="edit-post-btn" data-id="${post.id}" data-title="${escapeHtml(post.title)}" data-text="${escapeHtml(post.text)}">✏️</button>` : ''}${canDelete ? `<button class="delete-post-btn" data-id="${post.id}">🗑 Удалить</button>` : ''}</div>
                 </div>
                 <div class="post-title">${escapeHtml(post.title)}</div>
                 <div class="post-text">${escapeHtml(post.text).replace(/\n/g,'<br>')}</div>
@@ -365,7 +367,7 @@
             postsContainer.appendChild(div);
         });
         document.querySelectorAll('.delete-post-btn').forEach(btn => btn.addEventListener('click', async e => { await deleteDoc(doc(db,"posts",btn.getAttribute('data-id'))); updateUserStats(); }));
-        document.querySelectorAll('.edit-post').forEach(btn => btn.addEventListener('click', e => { document.getElementById('editPostId').value = btn.getAttribute('data-id'); document.getElementById('editPostTitle').value = btn.getAttribute('data-title'); document.getElementById('editPostText').value = btn.getAttribute('data-text'); document.getElementById('editPostModal').style.display='flex'; }));
+        document.querySelectorAll('.edit-post-btn').forEach(btn => btn.addEventListener('click', e => { document.getElementById('editPostId').value = btn.getAttribute('data-id'); document.getElementById('editPostTitle').value = btn.getAttribute('data-title'); document.getElementById('editPostText').value = btn.getAttribute('data-text'); document.getElementById('editPostModal').style.display='flex'; }));
         document.querySelectorAll('.delete-comment-btn').forEach(btn => btn.addEventListener('click', async e => { await deleteComment(btn.getAttribute('data-post'), btn.getAttribute('data-comment')); }));
         document.querySelectorAll('.edit-comment-btn').forEach(btn => btn.addEventListener('click', e => { document.getElementById('editCommentPostId').value = btn.getAttribute('data-post'); document.getElementById('editCommentId').value = btn.getAttribute('data-comment'); document.getElementById('editCommentText').value = btn.getAttribute('data-text'); document.getElementById('editCommentModal').style.display='flex'; }));
         document.querySelectorAll('.send-comment').forEach(btn => btn.addEventListener('click', async e => { const postId = btn.getAttribute('data-id'); const inp = document.getElementById(`comminp-${postId}`); if(inp.value.trim()) { await addComment(postId, inp.value.trim()); inp.value = ''; } }));
@@ -381,7 +383,7 @@
         flat.sort((a,b)=>(b.date||0)-(a.date||0));
         let html = `<div style="margin-bottom:20px"><div class="add-comment"><input type="text" id="newGlobalComment" placeholder="Новый комментарий (к последнему посту)" style="flex:1" class="comment-input"><button id="submitGlobalComment" class="btn-green">✏️</button></div></div>`;
         if(!flat.length) html += '<div style="text-align:center;padding:40px">💬 Нет комментариев</div>';
-        else flat.forEach(c => { const canDelete = isAdmin || c.author === currentUser.nickname; html += `<div class="discussion-card"><div style="display:flex; justify-content:space-between; flex-wrap:wrap"><div><strong>@${escapeHtml(c.author)}</strong> <span class="comment-date">${formatDate(c.date)}</span></div>${canDelete ? `<button class="del-disc" data-post="${c.postId}" data-comment="${c.id}">🗑</button>` : ''}</div><div class="discussion-text">${escapeHtml(c.text)}</div><div class="discussion-meta">📌 Пост: <a href="#" class="goto-post" data-post="${c.postId}">${escapeHtml(c.postTitle?.substring(0,60))}</a></div><div class="comment-actions"><button class="reply-disc" data-post="${c.postId}" data-comment="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button></div></div>`; });
+        else flat.forEach(c => { const canDelete = isAdmin || c.author === currentUser.nickname; html += `<div class="discussion-card"><div style="display:flex; justify-content:space-between; flex-wrap:wrap"><div><strong>@${escapeHtml(c.author)}</strong> <span class="comment-date">${formatDate(c.date)}</span></div>${canDelete ? `<button class="del-disc" data-post="${c.postId}" data-comment="${c.id}" style="background:#ff3333; color:white; border:none; padding:2px 8px; border-radius:12px; cursor:pointer;">🗑</button>` : ''}</div><div class="discussion-text">${escapeHtml(c.text)}</div><div class="discussion-meta">📌 Пост: <a href="#" class="goto-post" data-post="${c.postId}">${escapeHtml(c.postTitle?.substring(0,60))}</a></div><div class="comment-actions"><button class="reply-disc" data-post="${c.postId}" data-comment="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button></div></div>`; });
         postsContainer.innerHTML = html;
         document.querySelectorAll('.del-disc').forEach(btn => btn.addEventListener('click', async e => { await deleteComment(btn.getAttribute('data-post'), btn.getAttribute('data-comment')); }));
         document.querySelectorAll('.goto-post').forEach(btn => btn.addEventListener('click', e => { e.preventDefault(); currentView='posts'; renderPosts(); setTimeout(()=>document.querySelector(`.post-card:has([data-id="${btn.getAttribute('data-post')}"])`)?.scrollIntoView({behavior:'smooth'}),100); }));
@@ -389,7 +391,7 @@
         document.getElementById('submitGlobalComment')?.addEventListener('click', async () => { const inp = document.getElementById('newGlobalComment'); if(inp.value.trim() && allPosts.length) { await addComment(allPosts[0].id, inp.value.trim()); inp.value = ''; } else alert('Нет постов или пустой комментарий'); });
     }
 
-    async function createPost(title, text, isPrivate) { if(title.length>100 || text.length>10000) return alert('Лимиты'); await addDoc(collection(db,"posts"), { title, text, authorNick: currentUser.nickname, authorAvatar: currentUser.avatar, date: Timestamp.now(), comments: [], likes: {}, private: isPrivate }); updateUserStats(); }
+    async function createPost(title, text, isPrivate) { if(title.length>100) return alert('Название максимум 100 символов'); if(text.length>10000) return alert('Текст максимум 10000 символов'); await addDoc(collection(db,"posts"), { title, text, authorNick: currentUser.nickname, authorAvatar: currentUser.avatar, date: Timestamp.now(), comments: [], likes: {}, private: isPrivate }); updateUserStats(); }
 
     function subscribePosts() { onSnapshot(query(collection(db,"posts"), orderBy("date","desc")), snap => { allPosts = []; snap.forEach(d => allPosts.push({ id: d.id, ...d.data() })); if(currentView === 'posts') renderPosts(); else if(currentView === 'discussions') renderDiscussions(); }); }
     function subscribeUsers() { onSnapshot(collection(db,"users"), snap => { allUsers = []; snap.forEach(d => allUsers.push({ id: d.id, ...d.data() })); }); }
@@ -397,9 +399,9 @@
     async function sendMessage(to, text) { if(!text.trim()) return; const chatId = [currentUser.nickname, to].sort().join('_'); await setDoc(doc(db,"chats",chatId), { participants: [currentUser.nickname, to], lastMessage: text, lastUpdate: Timestamp.now() }, { merge: true }); await addDoc(collection(db,"chats",chatId,"messages"), { from: currentUser.nickname, text, timestamp: Timestamp.now() }); }
     function loadChats(searchTerm='') { const q = query(collection(db,"chats"), where("participants","array-contains",currentUser.nickname)); onSnapshot(q, snap => { let chats = []; snap.forEach(d => { const data = d.data(); const other = data.participants.find(p=>p!==currentUser.nickname); if(other.toLowerCase().includes(searchTerm.toLowerCase())) chats.push({ id: d.id, other, lastMessage: data.lastMessage }); }); document.getElementById('chatUsersList').innerHTML = chats.map(c => `<div class="chat-user" data-user="${c.other}"><strong>@${escapeHtml(c.other)}</strong><div style="font-size:11px">${escapeHtml(c.lastMessage?.substring(0,30))}</div></div>`).join(''); document.querySelectorAll('.chat-user').forEach(el => el.addEventListener('click', () => { currentChatWith = el.getAttribute('data-user'); loadMessages(currentChatWith); document.querySelectorAll('.chat-user').forEach(u=>u.classList.remove('active')); el.classList.add('active'); })); }); }
     function loadMessages(withUser) { if(unsubscribeChat) unsubscribeChat(); const chatId = [currentUser.nickname, withUser].sort().join('_'); const messagesDiv = document.getElementById('chatMessages'); unsubscribeChat = onSnapshot(query(collection(db,"chats",chatId,"messages"), orderBy("timestamp")), snap => { messagesDiv.innerHTML = ''; snap.forEach(d => { const msg = d.data(); const isMy = msg.from === currentUser.nickname; messagesDiv.innerHTML += `<div class="chat-message ${isMy ? 'my' : 'other'}"><strong>${isMy ? 'Я' : '@'+escapeHtml(msg.from)}</strong><br>${escapeHtml(msg.text)}<div style="font-size:10px;opacity:0.6">${formatDate(msg.timestamp)}</div></div>`; }); messagesDiv.scrollTop = messagesDiv.scrollHeight; }); }
-    function showAllUsersList() { const container = document.getElementById('allUsersList'); const searchInput2 = document.getElementById('allUsersSearch'); const render = () => { const term = searchInput2.value.toLowerCase(); const filtered = allUsers.filter(u => u.nickname !== currentUser.nickname && u.nickname.toLowerCase().includes(term)); container.innerHTML = filtered.map(u => `<div class="user-item" data-user="${u.nickname}" style="cursor:pointer"><strong>@${escapeHtml(u.nickname)}</strong> ${u.avatar || '😀'}</div>`).join(''); document.querySelectorAll('.user-item').forEach(el => el.addEventListener('click', () => { document.querySelectorAll('.user-item').forEach(x=>x.style.background='none'); el.style.background='rgba(0,255,0,0.2)'; selectedAllUser = el.getAttribute('data-user'); })); }; render(); searchInput2.oninput = render; document.getElementById('allUsersModal').style.display='flex'; }
+    function showAllUsersList() { const container = document.getElementById('allUsersList'); const searchInput2 = document.getElementById('allUsersSearch'); const render = () => { const term = searchInput2.value.toLowerCase(); const filtered = allUsers.filter(u => u.nickname !== currentUser.nickname && u.nickname.toLowerCase().includes(term)); container.innerHTML = filtered.map(u => `<div class="user-item" data-user="${u.nickname}" style="cursor:pointer; padding:10px; border-bottom:1px solid #333;"><strong>@${escapeHtml(u.nickname)}</strong> ${u.avatar || '😀'}</div>`).join(''); document.querySelectorAll('.user-item').forEach(el => el.addEventListener('click', () => { document.querySelectorAll('.user-item').forEach(x=>x.style.background='none'); el.style.background='rgba(0,255,0,0.2)'; selectedAllUser = el.getAttribute('data-user'); })); }; render(); searchInput2.oninput = render; document.getElementById('allUsersModal').style.display='flex'; }
 
-    function showUserList() { if(!isAdmin) return; const container = document.getElementById('userListContainer'); container.innerHTML = ''; allUsers.forEach(u => { const dateStr = u.firstSeen ? new Date(u.firstSeen.toDate()).toLocaleString() : 'неизвестно'; container.innerHTML += `<div class="user-item"><div><strong>@${escapeHtml(u.nickname)}</strong><br>📍 IP: ${escapeHtml(u.ip)}<br>📅 Регистрация: ${dateStr}<br>📝 Постов: ${u.postsCount||0}, Комментов: ${u.commentsCount||0}</div><button class="delete-user-admin" data-user="${u.nickname}" style="margin-top:8px; border:1px solid #ff3333; background:#ff3333; color:white; padding:4px 12px; border-radius:20px; cursor:pointer">❌ Удалить пользователя</button></div>`; }); document.querySelectorAll('.delete-user-admin').forEach(btn => btn.addEventListener('click', async e => { if(confirm('Удалить пользователя?')) await deleteDoc(doc(db,"users",btn.getAttribute('data-user'))); })); infoModal.style.display='flex'; }
+    function showUserList() { if(!isAdmin) return; const container = document.getElementById('userListContainer'); container.innerHTML = ''; allUsers.forEach(u => { const dateStr = u.firstSeen ? new Date(u.firstSeen.toDate()).toLocaleString() : 'неизвестно'; container.innerHTML += `<div class="user-item" style="padding:12px; border-bottom:1px solid #333;"><div><strong>@${escapeHtml(u.nickname)}</strong><br>📍 IP: ${escapeHtml(u.ip)}<br>📅 Регистрация: ${dateStr}<br>📝 Постов: ${u.postsCount||0}, Комментов: ${u.commentsCount||0}</div><button class="delete-user-admin" data-user="${u.nickname}" style="margin-top:8px; background:#ff3333; color:white; border:none; padding:6px 12px; border-radius:20px; cursor:pointer;">❌ Удалить пользователя</button></div>`; }); document.querySelectorAll('.delete-user-admin').forEach(btn => btn.addEventListener('click', async e => { if(confirm('Удалить пользователя?')) await deleteDoc(doc(db,"users",btn.getAttribute('data-user'))); })); infoModal.style.display='flex'; }
 
     (async function() {
         await getOrCreateUser();
@@ -412,7 +414,7 @@
         document.getElementById('chatBtn').onclick = () => { loadChats(); document.getElementById('chatModal').style.display='flex'; document.getElementById('chatUserSearch').value = ''; };
         document.getElementById('profileBtn').onclick = () => { document.getElementById('nicknameInput').value = currentUser.nickname; const sel = document.getElementById('avatarSelect'); sel.innerHTML = avatars.map(a => `<div class="avatar-option ${a===currentUser.avatar?'selected':''}" data-avatar="${a}">${a}</div>`).join(''); document.querySelectorAll('.avatar-option').forEach(el => el.addEventListener('click', () => { document.querySelectorAll('.avatar-option').forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); })); document.getElementById('profileModal').style.display='flex'; };
         document.getElementById('saveProfileBtn').onclick = async () => { let newNick = document.getElementById('nicknameInput').value.trim(); const newAvatar = document.querySelector('.avatar-option.selected')?.innerText || currentUser.avatar; if(newNick && newNick !== currentUser.nickname) { if(!/^[a-zA-Z0-9\-]+$/.test(newNick) || newNick.length<1 || newNick.length>20) return alert('Некорректный ник'); if(await getDoc(doc(db,"users",newNick)).then(s=>s.exists())) return alert('Ник занят'); await deleteDoc(doc(db,"users",currentUser.nickname)); currentUser.nickname = newNick; localStorage.setItem('nowosty1_user_nick', newNick); } currentUser.avatar = newAvatar; localStorage.setItem('nowosty1_user_avatar', newAvatar); await setDoc(doc(db,"users",currentUser.nickname), { nickname: currentUser.nickname, avatar: currentUser.avatar, ip: await getUserIP(), firstSeen: Timestamp.now() }, { merge: true }); sidebarNick.innerText = currentUser.nickname; sidebarAvatar.innerText = currentUser.avatar; if(currentUser.nickname === 'SWILL_ADMIN') { isAdmin=true; infoBtn.style.display='inline-block'; } else { isAdmin=false; infoBtn.style.display='none'; } document.getElementById('profileModal').style.display='none'; location.reload(); };
-        document.getElementById('submitPostBtn').onclick = async () => { await createPost(document.getElementById('postTitle').value, document.getElementById('postText').value, document.getElementById('postPrivate').checked); document.getElementById('postModal').style.display='none'; document.getElementById('postTitle').value=''; document.getElementById('postText').value=''; };
+        document.getElementById('submitPostBtn').onclick = async () => { await createPost(document.getElementById('postTitle').value, document.getElementById('postText').value, document.getElementById('postPrivate').checked); document.getElementById('postModal').style.display='none'; document.getElementById('postTitle').value=''; document.getElementById('postText').value=''; document.getElementById('postPrivate').checked=false; };
         document.getElementById('saveEditPost').onclick = async () => { await editPost(document.getElementById('editPostId').value, document.getElementById('editPostTitle').value, document.getElementById('editPostText').value); document.getElementById('editPostModal').style.display='none'; };
         document.getElementById('saveEditComment').onclick = async () => { await editComment(document.getElementById('editCommentPostId').value, document.getElementById('editCommentId').value, document.getElementById('editCommentText').value); document.getElementById('editCommentModal').style.display='none'; };
         document.getElementById('addChatBtn').onclick = () => { const nick = document.getElementById('addChatUser').value.trim(); if(nick && nick !== currentUser.nickname) { currentChatWith = nick; loadMessages(nick); document.getElementById('chatModal').style.display='flex'; document.getElementById('chatUserSearch').value = ''; loadChats(); } else alert('Введите корректный ник'); };
