@@ -16,6 +16,8 @@
         button { background: none; border: none; cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 14px; transition: 0.2s; }
         .btn-green { border: 1px solid #0f0; color: #0f0; background: transparent; }
         .btn-green:hover { background: #0f0; color: #000; }
+        .delete-post-btn, .delete-comment-btn { background: #ff3333 !important; color: white !important; border: 1px solid #ff6666 !important; font-weight: bold; }
+        .delete-post-btn:hover, .delete-comment-btn:hover { background: #cc0000 !important; }
         .main-container { display: flex; max-width: 1300px; margin: 0 auto; padding: 20px; gap: 20px; }
         .posts-area { flex: 3; }
         .sidebar { flex: 1; position: sticky; top: 80px; height: fit-content; padding: 15px; border-radius: 16px; border: 1px solid; }
@@ -58,7 +60,8 @@
         .avatar-select { display: flex; gap: 12px; flex-wrap: wrap; margin: 15px 0; }
         .avatar-option { font-size: 36px; cursor: pointer; padding: 5px; border-radius: 50%; border: 2px solid transparent; }
         .avatar-option.selected { border-color: #0f0; }
-        .user-item { padding: 12px; border-bottom: 1px solid; }
+        .user-item { padding: 12px; border-bottom: 1px solid; cursor: pointer; }
+        .user-item:hover { background: rgba(0,255,0,0.1); }
         .close { float: right; font-size: 28px; cursor: pointer; line-height: 20px; }
         .user-search-input { width: 100%; margin-bottom: 10px; }
         .all-users-btn { width: 100%; margin-bottom: 10px; }
@@ -344,7 +347,7 @@
                         <span class="post-date">${formatDate(post.date)}</span>
                         ${post.private ? '<span class="private-badge">🔒 Только админ</span>' : ''}
                     </div>
-                    <div>${canEdit ? `<button class="edit-post" data-id="${post.id}" data-title="${escapeHtml(post.title)}" data-text="${escapeHtml(post.text)}">✏️</button>` : ''}${canDelete ? `<button class="delete-post" data-id="${post.id}">🗑</button>` : ''}</div>
+                    <div>${canEdit ? `<button class="edit-post" data-id="${post.id}" data-title="${escapeHtml(post.title)}" data-text="${escapeHtml(post.text)}">✏️</button>` : ''}${canDelete ? `<button class="delete-post-btn" data-id="${post.id}">🗑 Удалить</button>` : ''}</div>
                 </div>
                 <div class="post-title">${escapeHtml(post.title)}</div>
                 <div class="post-text">${escapeHtml(post.text).replace(/\n/g,'<br>')}</div>
@@ -361,7 +364,7 @@
             `;
             postsContainer.appendChild(div);
         });
-        document.querySelectorAll('.delete-post').forEach(btn => btn.addEventListener('click', async e => { await deleteDoc(doc(db,"posts",btn.getAttribute('data-id'))); updateUserStats(); }));
+        document.querySelectorAll('.delete-post-btn').forEach(btn => btn.addEventListener('click', async e => { await deleteDoc(doc(db,"posts",btn.getAttribute('data-id'))); updateUserStats(); }));
         document.querySelectorAll('.edit-post').forEach(btn => btn.addEventListener('click', e => { document.getElementById('editPostId').value = btn.getAttribute('data-id'); document.getElementById('editPostTitle').value = btn.getAttribute('data-title'); document.getElementById('editPostText').value = btn.getAttribute('data-text'); document.getElementById('editPostModal').style.display='flex'; }));
         document.querySelectorAll('.delete-comment-btn').forEach(btn => btn.addEventListener('click', async e => { await deleteComment(btn.getAttribute('data-post'), btn.getAttribute('data-comment')); }));
         document.querySelectorAll('.edit-comment-btn').forEach(btn => btn.addEventListener('click', e => { document.getElementById('editCommentPostId').value = btn.getAttribute('data-post'); document.getElementById('editCommentId').value = btn.getAttribute('data-comment'); document.getElementById('editCommentText').value = btn.getAttribute('data-text'); document.getElementById('editCommentModal').style.display='flex'; }));
@@ -391,14 +394,12 @@
     function subscribePosts() { onSnapshot(query(collection(db,"posts"), orderBy("date","desc")), snap => { allPosts = []; snap.forEach(d => allPosts.push({ id: d.id, ...d.data() })); if(currentView === 'posts') renderPosts(); else if(currentView === 'discussions') renderDiscussions(); }); }
     function subscribeUsers() { onSnapshot(collection(db,"users"), snap => { allUsers = []; snap.forEach(d => allUsers.push({ id: d.id, ...d.data() })); }); }
 
-    // ЛС
     async function sendMessage(to, text) { if(!text.trim()) return; const chatId = [currentUser.nickname, to].sort().join('_'); await setDoc(doc(db,"chats",chatId), { participants: [currentUser.nickname, to], lastMessage: text, lastUpdate: Timestamp.now() }, { merge: true }); await addDoc(collection(db,"chats",chatId,"messages"), { from: currentUser.nickname, text, timestamp: Timestamp.now() }); }
     function loadChats(searchTerm='') { const q = query(collection(db,"chats"), where("participants","array-contains",currentUser.nickname)); onSnapshot(q, snap => { let chats = []; snap.forEach(d => { const data = d.data(); const other = data.participants.find(p=>p!==currentUser.nickname); if(other.toLowerCase().includes(searchTerm.toLowerCase())) chats.push({ id: d.id, other, lastMessage: data.lastMessage }); }); document.getElementById('chatUsersList').innerHTML = chats.map(c => `<div class="chat-user" data-user="${c.other}"><strong>@${escapeHtml(c.other)}</strong><div style="font-size:11px">${escapeHtml(c.lastMessage?.substring(0,30))}</div></div>`).join(''); document.querySelectorAll('.chat-user').forEach(el => el.addEventListener('click', () => { currentChatWith = el.getAttribute('data-user'); loadMessages(currentChatWith); document.querySelectorAll('.chat-user').forEach(u=>u.classList.remove('active')); el.classList.add('active'); })); }); }
     function loadMessages(withUser) { if(unsubscribeChat) unsubscribeChat(); const chatId = [currentUser.nickname, withUser].sort().join('_'); const messagesDiv = document.getElementById('chatMessages'); unsubscribeChat = onSnapshot(query(collection(db,"chats",chatId,"messages"), orderBy("timestamp")), snap => { messagesDiv.innerHTML = ''; snap.forEach(d => { const msg = d.data(); const isMy = msg.from === currentUser.nickname; messagesDiv.innerHTML += `<div class="chat-message ${isMy ? 'my' : 'other'}"><strong>${isMy ? 'Я' : '@'+escapeHtml(msg.from)}</strong><br>${escapeHtml(msg.text)}<div style="font-size:10px;opacity:0.6">${formatDate(msg.timestamp)}</div></div>`; }); messagesDiv.scrollTop = messagesDiv.scrollHeight; }); }
     function showAllUsersList() { const container = document.getElementById('allUsersList'); const searchInput2 = document.getElementById('allUsersSearch'); const render = () => { const term = searchInput2.value.toLowerCase(); const filtered = allUsers.filter(u => u.nickname !== currentUser.nickname && u.nickname.toLowerCase().includes(term)); container.innerHTML = filtered.map(u => `<div class="user-item" data-user="${u.nickname}" style="cursor:pointer"><strong>@${escapeHtml(u.nickname)}</strong> ${u.avatar || '😀'}</div>`).join(''); document.querySelectorAll('.user-item').forEach(el => el.addEventListener('click', () => { document.querySelectorAll('.user-item').forEach(x=>x.style.background='none'); el.style.background='rgba(0,255,0,0.2)'; selectedAllUser = el.getAttribute('data-user'); })); }; render(); searchInput2.oninput = render; document.getElementById('allUsersModal').style.display='flex'; }
 
-    // Админ инфо
-    function showUserList() { if(!isAdmin) return; const container = document.getElementById('userListContainer'); container.innerHTML = ''; allUsers.forEach(u => { const dateStr = u.firstSeen ? new Date(u.firstSeen.toDate()).toLocaleString() : 'неизвестно'; container.innerHTML += `<div class="user-item"><div><strong>@${escapeHtml(u.nickname)}</strong><br>📍 IP: ${escapeHtml(u.ip)}<br>📅 Регистрация: ${dateStr}<br>📝 Постов: ${u.postsCount||0}, Комментов: ${u.commentsCount||0}</div><button class="delete-user-admin" data-user="${u.nickname}" style="margin-top:8px; border:1px solid #f66; padding:4px 12px; border-radius:20px">❌ Удалить пользователя</button></div>`; }); document.querySelectorAll('.delete-user-admin').forEach(btn => btn.addEventListener('click', async e => { if(confirm('Удалить пользователя?')) await deleteDoc(doc(db,"users",btn.getAttribute('data-user'))); })); infoModal.style.display='flex'; }
+    function showUserList() { if(!isAdmin) return; const container = document.getElementById('userListContainer'); container.innerHTML = ''; allUsers.forEach(u => { const dateStr = u.firstSeen ? new Date(u.firstSeen.toDate()).toLocaleString() : 'неизвестно'; container.innerHTML += `<div class="user-item"><div><strong>@${escapeHtml(u.nickname)}</strong><br>📍 IP: ${escapeHtml(u.ip)}<br>📅 Регистрация: ${dateStr}<br>📝 Постов: ${u.postsCount||0}, Комментов: ${u.commentsCount||0}</div><button class="delete-user-admin" data-user="${u.nickname}" style="margin-top:8px; border:1px solid #ff3333; background:#ff3333; color:white; padding:4px 12px; border-radius:20px; cursor:pointer">❌ Удалить пользователя</button></div>`; }); document.querySelectorAll('.delete-user-admin').forEach(btn => btn.addEventListener('click', async e => { if(confirm('Удалить пользователя?')) await deleteDoc(doc(db,"users",btn.getAttribute('data-user'))); })); infoModal.style.display='flex'; }
 
     (async function() {
         await getOrCreateUser();
