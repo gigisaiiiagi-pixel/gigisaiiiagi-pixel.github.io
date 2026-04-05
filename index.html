@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nowosty1 — полная версия</title>
+    <title>Nowosty1 — Всё включено</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; transition: background 0.2s, color 0.2s, border-color 0.2s; }
         body.light { background: #f0f2f5; color: #1a1a1a; }
         body.dark { background: #0a0a0a; color: #e4e6eb; }
-        body.light .card, body.light .top-bar, body.light .sidebar, body.light .modal-content, body.light .chat-modal-content { background: #fff; border-color: #ddd; }
-        body.dark .card, body.dark .top-bar, body.dark .sidebar, body.dark .modal-content, body.dark .chat-modal-content { background: #1e1e1e; border-color: #333; }
+        body.light .top-bar, body.light .sidebar, body.light .modal-content, body.light .chat-modal-content, body.light .post-card, body.light .discussion-card, body.light .comment { background: #fff; border-color: #ddd; }
+        body.dark .top-bar, body.dark .sidebar, body.dark .modal-content, body.dark .chat-modal-content, body.dark .post-card, body.dark .discussion-card, body.dark .comment { background: #1e1e1e; border-color: #333; }
         .top-bar { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid; flex-wrap: wrap; gap: 10px; }
         .left-area { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        .admin-input, .search-input, .comment-input, .chat-input { padding: 8px 12px; border-radius: 20px; border: 1px solid; font-size: 14px; }
+        .admin-input, .search-input, .comment-input, .chat-input, .user-search-input { padding: 8px 12px; border-radius: 20px; border: 1px solid; font-size: 14px; background: transparent; }
         button { background: none; border: none; cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 14px; transition: 0.2s; }
         .btn-green { border: 1px solid #0f0; color: #0f0; background: transparent; }
         .btn-green:hover { background: #0f0; color: #000; }
-        .btn-red { border: 1px solid #f66; color: #f66; }
         .main-container { display: flex; max-width: 1300px; margin: 0 auto; padding: 20px; gap: 20px; }
         .posts-area { flex: 3; }
         .sidebar { flex: 1; position: sticky; top: 80px; height: fit-content; padding: 15px; border-radius: 16px; border: 1px solid; }
@@ -25,22 +24,19 @@
         .post-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid; }
         .post-author { display: flex; align-items: center; gap: 12px; }
         .avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; background: #2a2a2a; }
-        .author-name { font-weight: bold; }
+        .author-name { font-weight: bold; color: #0f0; }
         .post-date, .comment-date { font-size: 11px; opacity: 0.6; }
         .post-title { font-size: 22px; font-weight: bold; margin: 12px 0; }
         .post-text, .comment-text { line-height: 1.4; margin: 12px 0; white-space: pre-wrap; }
         .post-actions, .comment-actions { display: flex; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
-        .like-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 30px; background: none; border: 1px solid; }
+        .like-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 30px; border: 1px solid; cursor: pointer; }
         .like-btn.active { color: #e0245e; border-color: #e0245e; }
         .like-count { font-size: 13px; cursor: pointer; }
-        .edit-btn, .delete-btn { background: none; padding: 4px 10px; border-radius: 20px; border: 1px solid; }
         .private-badge { background: #ff9900; color: #000; padding: 2px 8px; border-radius: 20px; font-size: 10px; margin-left: 8px; }
         .comments-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid; }
         .comment { padding: 12px; margin: 10px 0; border-radius: 12px; border: 1px solid; }
         .add-comment { display: flex; gap: 10px; margin-top: 15px; }
         .comment-input { flex: 1; }
-        .discussion-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-        .discussion-meta { font-size: 12px; margin-top: 8px; opacity: 0.7; }
         .load-more { text-align: center; padding: 12px; border-radius: 30px; margin-top: 20px; cursor: pointer; border: 1px solid; }
         .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 20px; border-radius: 30px; z-index: 2000; animation: fadeOut 3s forwards; }
         @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
@@ -48,7 +44,7 @@
         .modal-content, .chat-modal-content { padding: 24px; width: 90%; max-width: 550px; border-radius: 24px; border: 1px solid; max-height: 85vh; overflow-y: auto; }
         .chat-modal-content { max-width: 900px; height: 80vh; display: flex; flex-direction: column; }
         .chat-layout { display: flex; flex: 1; gap: 15px; min-height: 0; flex-wrap: wrap; }
-        .chat-users { width: 250px; border-right: 1px solid; overflow-y: auto; padding-right: 10px; }
+        .chat-users { width: 280px; border-right: 1px solid; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 8px; }
         .chat-user { padding: 10px; border-radius: 12px; cursor: pointer; margin-bottom: 5px; }
         .chat-user:hover, .chat-user.active { background: rgba(0,255,0,0.1); }
         .chat-messages-area { flex: 1; display: flex; flex-direction: column; min-width: 200px; }
@@ -58,12 +54,14 @@
         .chat-message.other { background: #3a3a3a; align-self: flex-start; }
         .chat-input-area { display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid; }
         .chat-input { flex: 1; }
-        .add-chat { display: flex; gap: 8px; margin-bottom: 15px; }
+        .add-chat { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
         .avatar-select { display: flex; gap: 12px; flex-wrap: wrap; margin: 15px 0; }
         .avatar-option { font-size: 36px; cursor: pointer; padding: 5px; border-radius: 50%; border: 2px solid transparent; }
         .avatar-option.selected { border-color: #0f0; }
         .user-item { padding: 12px; border-bottom: 1px solid; }
         .close { float: right; font-size: 28px; cursor: pointer; line-height: 20px; }
+        .user-search-input { width: 100%; margin-bottom: 10px; }
+        .all-users-btn { width: 100%; margin-bottom: 10px; }
         @media (max-width: 700px) { .main-container { flex-direction: column; } .chat-users { width: 100%; border-right: none; border-bottom: 1px solid; margin-bottom: 10px; } }
     </style>
 </head>
@@ -96,7 +94,7 @@
             <div><strong>@<span id="sidebarNick">-</span></strong><br><span id="sidebarRole">Пользователь</span></div>
         </div>
         <div class="add-chat">
-            <input type="text" id="addChatUser" placeholder="Ник для ЛС" style="flex:1; padding:8px; border-radius:20px; border:1px solid">
+            <input type="text" id="addChatUser" placeholder="Ник для ЛС" style="flex:1; padding:8px; border-radius:20px; border:1px solid; background:transparent">
             <button id="addChatBtn" class="btn-green">➕</button>
         </div>
     </div>
@@ -132,6 +130,10 @@
 <div id="likesList"></div></div></div>
 
 <div id="chatModal" class="modal"><div class="chat-modal-content"><span class="close">&times;</span><h3>💬 Личные сообщения</h3>
+<div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+    <input type="text" id="chatUserSearch" class="user-search-input" placeholder="🔍 Поиск пользователей по нику...">
+    <button id="showAllUsersBtn" class="btn-green">📋 Все пользователи</button>
+</div>
 <div class="chat-layout">
     <div class="chat-users" id="chatUsersList"></div>
     <div class="chat-messages-area">
@@ -143,9 +145,14 @@
     </div>
 </div></div></div>
 
+<div id="allUsersModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h2>📋 Все зарегистрированные пользователи</h2>
+<input type="text" id="allUsersSearch" class="user-search-input" placeholder="🔍 Поиск...">
+<div id="allUsersList" style="max-height:400px; overflow-y:auto;"></div>
+<button id="startChatFromList" class="btn-green" style="margin-top:10px">💬 Начать чат с выбранным</button></div></div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, Timestamp, updateDoc, getDoc, setDoc, where, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, Timestamp, updateDoc, getDoc, setDoc, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBGq2mQFVashCvLctzTrsUnquOb61BlwhY",
@@ -158,7 +165,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Глобальные переменные
     let currentUser = null;
     let isAdmin = false;
     let allPosts = [];
@@ -169,8 +175,8 @@
     const POSTS_PER_PAGE = 5;
     let currentChatWith = null;
     let unsubscribeChat = null;
+    let selectedAllUser = null;
 
-    // DOM
     const postsContainer = document.getElementById('postsContainer');
     const searchInput = document.getElementById('searchInput');
     const loadMoreBtn = document.getElementById('loadMoreBtn');
@@ -180,7 +186,6 @@
     const infoBtn = document.getElementById('infoBtn');
     const themeBtn = document.getElementById('themeBtn');
 
-    // Утилиты
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
     function formatDate(timestamp) { if(!timestamp) return 'только что'; const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp); return d.toLocaleString(); }
     function showToast(msg) { const toast = document.createElement('div'); toast.className = 'toast'; toast.innerText = msg; document.body.appendChild(toast); setTimeout(() => toast.remove(), 3000); }
@@ -188,7 +193,6 @@
     function generateRandomNick() { const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'; return Array(8).fill().map(()=>chars[Math.floor(Math.random()*chars.length)]).join(''); }
     const avatars = ['😀','😎','🥸','🤠','😺','🐶','🐱','🦊','🐼','🐸'];
 
-    // Пользователь
     async function getOrCreateUser() {
         let stored = localStorage.getItem('nowosty1_user_nick');
         let storedAvatar = localStorage.getItem('nowosty1_user_avatar') || '😀';
@@ -213,29 +217,150 @@
         else { isAdmin = false; sidebarRole.innerText = 'Пользователь'; infoBtn.style.display = 'none'; }
     }
 
-    async function updateUserStats() { if(!currentUser) return; const postsCount = allPosts.filter(p=>p.authorNick===currentUser.nickname).length; let commentsCount = 0; allPosts.forEach(p=>{ if(p.comments) commentsCount += p.comments.filter(c=>c.author===currentUser.nickname).length; }); await setDoc(doc(db,"users",currentUser.nickname), { postsCount, commentsCount }, { merge: true }); }
+    async function updateUserStats() {
+        if(!currentUser) return;
+        const postsCount = allPosts.filter(p=>p.authorNick===currentUser.nickname).length;
+        let commentsCount = 0;
+        allPosts.forEach(p=>{ if(p.comments) commentsCount += p.comments.filter(c=>c.author===currentUser.nickname).length; });
+        await setDoc(doc(db,"users",currentUser.nickname), { postsCount, commentsCount }, { merge: true });
+    }
 
-    // Лайки
-    async function toggleLike(type, id, postId) { if(!currentUser) return; const ref = doc(db, "posts", postId); const snap = await getDoc(ref); if(!snap.exists()) return; const data = snap.data(); let likes = data.likes || {}; if(likes[currentUser.nickname]) delete likes[currentUser.nickname]; else likes[currentUser.nickname] = true; await updateDoc(ref, { likes }); }
+    async function toggleLike(type, id, postId) {
+        if(!currentUser) return;
+        const ref = doc(db, "posts", postId);
+        const snap = await getDoc(ref);
+        if(!snap.exists()) return;
+        const data = snap.data();
+        let likes = data.likes || {};
+        if(likes[currentUser.nickname]) delete likes[currentUser.nickname];
+        else likes[currentUser.nickname] = true;
+        await updateDoc(ref, { likes });
+    }
 
-    // Редактирование
     async function editPost(postId, newTitle, newText) { await updateDoc(doc(db,"posts",postId), { title: newTitle, text: newText }); }
-    async function editComment(postId, commentId, newText) { const ref = doc(db,"posts",postId); const snap = await getDoc(ref); if(snap.exists()) { const post = snap.data(); const recurse = (comments) => { for(let c of comments) { if(c.id === commentId) { c.text = newText; return true; } if(c.replies && recurse(c.replies)) return true; } return false; }; const newComments = JSON.parse(JSON.stringify(post.comments || [])); recurse(newComments); await updateDoc(ref, { comments: newComments }); } }
+    async function editComment(postId, commentId, newText) {
+        const ref = doc(db,"posts",postId);
+        const snap = await getDoc(ref);
+        if(snap.exists()) {
+            const post = snap.data();
+            const recurse = (comments) => {
+                for(let c of comments) {
+                    if(c.id === commentId) { c.text = newText; return true; }
+                    if(c.replies && recurse(c.replies)) return true;
+                }
+                return false;
+            };
+            const newComments = JSON.parse(JSON.stringify(post.comments || []));
+            recurse(newComments);
+            await updateDoc(ref, { comments: newComments });
+        }
+    }
 
-    // Комментарии
-    async function addComment(postId, text, parentId=null) { const ref = doc(db,"posts",postId); const snap = await getDoc(ref); if(snap.exists()) { const post = snap.data(); const newComment = { id: Date.now()+Math.random(), text, author: currentUser.nickname, date: Date.now(), replies: [], likes: {} }; let newComments = JSON.parse(JSON.stringify(post.comments || [])); if(parentId) { const addReply = (comments) => { for(let c of comments) { if(c.id === parentId) { if(!c.replies) c.replies = []; c.replies.push(newComment); return true; } if(c.replies && addReply(c.replies)) return true; } return false; }; addReply(newComments); } else newComments.push(newComment); await updateDoc(ref, { comments: newComments }); updateUserStats(); if(parentId && post.authorNick !== currentUser.nickname) showToast(`@${post.authorNick}, вам ответили на комментарий`); } }
-    async function deleteComment(postId, commentId) { const ref = doc(db,"posts",postId); const snap = await getDoc(ref); if(snap.exists()) { const post = snap.data(); const recurse = (comments) => { for(let i=0;i<comments.length;i++) { if(comments[i].id === commentId) { comments.splice(i,1); return true; } if(comments[i].replies && recurse(comments[i].replies)) return true; } return false; }; const newComments = JSON.parse(JSON.stringify(post.comments || [])); recurse(newComments); await updateDoc(ref, { comments: newComments }); updateUserStats(); } }
+    async function addComment(postId, text, parentId=null) {
+        const ref = doc(db,"posts",postId);
+        const snap = await getDoc(ref);
+        if(snap.exists()) {
+            const post = snap.data();
+            const newComment = { id: Date.now()+Math.random(), text, author: currentUser.nickname, date: Date.now(), replies: [], likes: {} };
+            let newComments = JSON.parse(JSON.stringify(post.comments || []));
+            if(parentId) {
+                const addReply = (comments) => {
+                    for(let c of comments) {
+                        if(c.id === parentId) { if(!c.replies) c.replies = []; c.replies.push(newComment); return true; }
+                        if(c.replies && addReply(c.replies)) return true;
+                    }
+                    return false;
+                };
+                addReply(newComments);
+            } else newComments.push(newComment);
+            await updateDoc(ref, { comments: newComments });
+            updateUserStats();
+            if(parentId && post.authorNick !== currentUser.nickname) showToast(`@${post.authorNick}, вам ответили на комментарий`);
+        }
+    }
 
-    // Рендер
-    function renderCommentsTree(comments, postId, level=0) { if(!comments?.length) return ''; let html = ''; comments.forEach(c => { const canDelete = isAdmin || c.author === currentUser.nickname; const canEdit = c.author === currentUser.nickname; const likesCount = Object.keys(c.likes || {}).length; const userLiked = c.likes && c.likes[currentUser.nickname]; html += `<div class="comment" style="margin-left:${level*20}px"><div class="comment-header" style="display:flex; justify-content:space-between"><div><strong class="author-name">@${escapeHtml(c.author)}</strong> <span class="comment-date">${formatDate(c.date)}</span></div><div>${canEdit ? `<button class="edit-comment-btn" data-post="${postId}" data-comment="${c.id}" data-text="${escapeHtml(c.text)}" style="margin-right:5px">✏️</button>` : ''}${canDelete ? `<button class="delete-comment-btn" data-post="${postId}" data-comment="${c.id}">🗑</button>` : ''}</div></div><div class="comment-text">${escapeHtml(c.text)}</div><div class="comment-actions"><button class="like-btn comment-like ${userLiked?'active':''}" data-type="comment" data-id="${c.id}" data-post="${postId}">❤️ <span class="like-count">${likesCount}</span></button><button class="reply-comment" data-post="${postId}" data-comment="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button></div>${c.replies?.length ? renderCommentsTree(c.replies, postId, level+1) : ''}</div>`; }); return html; }
+    async function deleteComment(postId, commentId) {
+        const ref = doc(db,"posts",postId);
+        const snap = await getDoc(ref);
+        if(snap.exists()) {
+            const post = snap.data();
+            const recurse = (comments) => {
+                for(let i=0;i<comments.length;i++) {
+                    if(comments[i].id === commentId) { comments.splice(i,1); return true; }
+                    if(comments[i].replies && recurse(comments[i].replies)) return true;
+                }
+                return false;
+            };
+            const newComments = JSON.parse(JSON.stringify(post.comments || []));
+            recurse(newComments);
+            await updateDoc(ref, { comments: newComments });
+            updateUserStats();
+        }
+    }
 
-    function renderPosts() { if(currentView !== 'posts') return;
+    function renderCommentsTree(comments, postId, level=0) {
+        if(!comments?.length) return '';
+        let html = '';
+        comments.forEach(c => {
+            const canDelete = isAdmin || c.author === currentUser.nickname;
+            const canEdit = c.author === currentUser.nickname;
+            const likesCount = Object.keys(c.likes || {}).length;
+            const userLiked = c.likes && c.likes[currentUser.nickname];
+            html += `<div class="comment" style="margin-left:${level*20}px">
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap">
+                    <div><strong class="author-name">@${escapeHtml(c.author)}</strong> <span class="comment-date">${formatDate(c.date)}</span></div>
+                    <div>${canEdit ? `<button class="edit-comment-btn" data-post="${postId}" data-comment="${c.id}" data-text="${escapeHtml(c.text)}" style="margin-right:5px">✏️</button>` : ''}${canDelete ? `<button class="delete-comment-btn" data-post="${postId}" data-comment="${c.id}">🗑</button>` : ''}</div>
+                </div>
+                <div class="comment-text">${escapeHtml(c.text)}</div>
+                <div class="comment-actions">
+                    <button class="like-btn comment-like ${userLiked?'active':''}" data-type="comment" data-id="${c.id}" data-post="${postId}">❤️ <span class="like-count">${likesCount}</span></button>
+                    <button class="reply-comment" data-post="${postId}" data-comment="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button>
+                </div>
+                ${c.replies?.length ? renderCommentsTree(c.replies, postId, level+1) : ''}
+            </div>`;
+        });
+        return html;
+    }
+
+    function renderPosts() {
+        if(currentView !== 'posts') return;
         let filtered = allPosts.filter(p => (!p.private || isAdmin || p.authorNick === currentUser.nickname) && (p.title?.toLowerCase().includes(searchQuery) || p.text?.toLowerCase().includes(searchQuery)));
         filtered.sort((a,b)=>(b.date?.toDate?.()||0)-(a.date?.toDate?.()||0));
         const toShow = filtered.slice(0, (postsPage+1)*POSTS_PER_PAGE);
         if(toShow.length === 0 && postsPage===0) { postsContainer.innerHTML = '<div style="text-align:center;padding:40px">📭 Нет постов</div>'; loadMoreBtn.style.display='none'; return; }
         if(postsPage===0) postsContainer.innerHTML = '';
-        toShow.slice(postsPage*POSTS_PER_PAGE).forEach(post => { const canDelete = isAdmin || post.authorNick === currentUser.nickname; const canEdit = post.authorNick === currentUser.nickname; const likesCount = Object.keys(post.likes || {}).length; const userLiked = post.likes && post.likes[currentUser.nickname]; const div = document.createElement('div'); div.className = 'post-card'; div.innerHTML = `<div class="post-header"><div class="post-author"><div class="avatar">${avatars.find(a=>a===post.authorAvatar) || '😀'}</div><span class="author-name">@${escapeHtml(post.authorNick)}</span><span class="post-date">${formatDate(post.date)}</span>${post.private ? '<span class="private-badge">🔒 Только админ</span>' : ''}</div><div>${canEdit ? `<button class="edit-post" data-id="${post.id}" data-title="${escapeHtml(post.title)}" data-text="${escapeHtml(post.text)}">✏️</button>` : ''}${canDelete ? `<button class="delete-post" data-id="${post.id}">🗑</button>` : ''}</div></div><div class="post-title">${escapeHtml(post.title)}</div><div class="post-text">${escapeHtml(post.text).replace(/\n/g,'<br>')}</div><div class="post-actions"><button class="like-btn post-like ${userLiked?'active':''}" data-type="post" data-id="${post.id}">❤️ <span class="like-count">${likesCount}</span></button></div><div class="comments-section"><div class="comments-list">${renderCommentsTree(post.comments || [], post.id)}</div><div class="add-comment"><input type="text" class="comment-input" id="comminp-${post.id}" placeholder="Ваш комментарий..."><button class="send-comment" data-id="${post.id}">💬</button></div></div>`; postsContainer.appendChild(div); });
+        toShow.slice(postsPage*POSTS_PER_PAGE).forEach(post => {
+            const canDelete = isAdmin || post.authorNick === currentUser.nickname;
+            const canEdit = post.authorNick === currentUser.nickname;
+            const likesCount = Object.keys(post.likes || {}).length;
+            const userLiked = post.likes && post.likes[currentUser.nickname];
+            const div = document.createElement('div');
+            div.className = 'post-card';
+            div.innerHTML = `
+                <div class="post-header">
+                    <div class="post-author">
+                        <div class="avatar">${avatars.find(a=>a===post.authorAvatar) || '😀'}</div>
+                        <span class="author-name">@${escapeHtml(post.authorNick)}</span>
+                        <span class="post-date">${formatDate(post.date)}</span>
+                        ${post.private ? '<span class="private-badge">🔒 Только админ</span>' : ''}
+                    </div>
+                    <div>${canEdit ? `<button class="edit-post" data-id="${post.id}" data-title="${escapeHtml(post.title)}" data-text="${escapeHtml(post.text)}">✏️</button>` : ''}${canDelete ? `<button class="delete-post" data-id="${post.id}">🗑</button>` : ''}</div>
+                </div>
+                <div class="post-title">${escapeHtml(post.title)}</div>
+                <div class="post-text">${escapeHtml(post.text).replace(/\n/g,'<br>')}</div>
+                <div class="post-actions">
+                    <button class="like-btn post-like ${userLiked?'active':''}" data-type="post" data-id="${post.id}">❤️ <span class="like-count">${likesCount}</span></button>
+                </div>
+                <div class="comments-section">
+                    <div class="comments-list">${renderCommentsTree(post.comments || [], post.id)}</div>
+                    <div class="add-comment">
+                        <input type="text" class="comment-input" id="comminp-${post.id}" placeholder="Ваш комментарий...">
+                        <button class="send-comment" data-id="${post.id}">💬</button>
+                    </div>
+                </div>
+            `;
+            postsContainer.appendChild(div);
+        });
         document.querySelectorAll('.delete-post').forEach(btn => btn.addEventListener('click', async e => { await deleteDoc(doc(db,"posts",btn.getAttribute('data-id'))); updateUserStats(); }));
         document.querySelectorAll('.edit-post').forEach(btn => btn.addEventListener('click', e => { document.getElementById('editPostId').value = btn.getAttribute('data-id'); document.getElementById('editPostTitle').value = btn.getAttribute('data-title'); document.getElementById('editPostText').value = btn.getAttribute('data-text'); document.getElementById('editPostModal').style.display='flex'; }));
         document.querySelectorAll('.delete-comment-btn').forEach(btn => btn.addEventListener('click', async e => { await deleteComment(btn.getAttribute('data-post'), btn.getAttribute('data-comment')); }));
@@ -243,16 +368,17 @@
         document.querySelectorAll('.send-comment').forEach(btn => btn.addEventListener('click', async e => { const postId = btn.getAttribute('data-id'); const inp = document.getElementById(`comminp-${postId}`); if(inp.value.trim()) { await addComment(postId, inp.value.trim()); inp.value = ''; } }));
         document.querySelectorAll('.reply-comment').forEach(btn => btn.addEventListener('click', e => { const txt = prompt(`Ответ @${btn.getAttribute('data-author')}:`); if(txt?.trim()) addComment(btn.getAttribute('data-post'), txt.trim(), btn.getAttribute('data-comment')); }));
         document.querySelectorAll('.like-btn').forEach(btn => btn.addEventListener('click', async e => { e.stopPropagation(); const type = btn.getAttribute('data-type'); const id = btn.getAttribute('data-id'); const postId = type==='post' ? id : btn.getAttribute('data-post'); await toggleLike(type, id, postId); }));
-        document.querySelectorAll('.like-count').forEach(async el => { const btn = el.closest('.like-btn'); if(btn) el.addEventListener('click', async e => { e.stopPropagation(); const postId = btn.getAttribute('data-type')==='post' ? btn.getAttribute('data-id') : btn.getAttribute('data-post'); const snap = await getDoc(doc(db,"posts",postId)); if(snap.exists()) { const likes = snap.data().likes || {}; const users = Object.keys(likes); document.getElementById('likesList').innerHTML = users.length ? users.map(u=>`<div>@${escapeHtml(u)}</div>`).join('') : '<div>Никого</div>'; document.getElementById('likesModal').style.display='flex'; } }); });
+        document.querySelectorAll('.like-count').forEach(el => { const btn = el.closest('.like-btn'); if(btn) el.addEventListener('click', async e => { e.stopPropagation(); const postId = btn.getAttribute('data-type')==='post' ? btn.getAttribute('data-id') : btn.getAttribute('data-post'); const snap = await getDoc(doc(db,"posts",postId)); if(snap.exists()) { const likes = snap.data().likes || {}; const users = Object.keys(likes); document.getElementById('likesList').innerHTML = users.length ? users.map(u=>`<div>@${escapeHtml(u)}</div>`).join('') : '<div>Никого</div>'; document.getElementById('likesModal').style.display='flex'; } }); });
         loadMoreBtn.style.display = toShow.length < filtered.length ? 'block' : 'none';
     }
 
-    function renderDiscussions() { if(currentView !== 'discussions') return;
+    function renderDiscussions() {
+        if(currentView !== 'discussions') return;
         let flat = []; allPosts.forEach(p => { if(p.comments) { const flatten = (arr, pid) => { arr.forEach(c => { flat.push({ ...c, postId: pid, postTitle: p.title }); if(c.replies) flatten(c.replies, pid); }); }; flatten(p.comments, p.id); } });
         flat.sort((a,b)=>(b.date||0)-(a.date||0));
-        let html = `<div style="margin-bottom:20px"><div class="add-comment" style="margin-bottom:15px"><input type="text" id="newGlobalComment" placeholder="Новый комментарий (к последнему посту)" style="flex:1" class="comment-input"><button id="submitGlobalComment" class="btn-green">✏️</button></div></div>`;
+        let html = `<div style="margin-bottom:20px"><div class="add-comment"><input type="text" id="newGlobalComment" placeholder="Новый комментарий (к последнему посту)" style="flex:1" class="comment-input"><button id="submitGlobalComment" class="btn-green">✏️</button></div></div>`;
         if(!flat.length) html += '<div style="text-align:center;padding:40px">💬 Нет комментариев</div>';
-        else flat.forEach(c => { const canDelete = isAdmin || c.author === currentUser.nickname; html += `<div class="discussion-card"><div class="discussion-header"><div><strong>@${escapeHtml(c.author)}</strong> <span class="comment-date">${formatDate(c.date)}</span></div>${canDelete ? `<button class="del-disc" data-post="${c.postId}" data-comment="${c.id}">🗑</button>` : ''}</div><div class="discussion-text">${escapeHtml(c.text)}</div><div class="discussion-meta">📌 Пост: <a href="#" class="goto-post" data-post="${c.postId}">${escapeHtml(c.postTitle?.substring(0,60))}</a></div><div class="comment-actions"><button class="reply-disc" data-post="${c.postId}" data-comment="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button></div></div>`; });
+        else flat.forEach(c => { const canDelete = isAdmin || c.author === currentUser.nickname; html += `<div class="discussion-card"><div style="display:flex; justify-content:space-between; flex-wrap:wrap"><div><strong>@${escapeHtml(c.author)}</strong> <span class="comment-date">${formatDate(c.date)}</span></div>${canDelete ? `<button class="del-disc" data-post="${c.postId}" data-comment="${c.id}">🗑</button>` : ''}</div><div class="discussion-text">${escapeHtml(c.text)}</div><div class="discussion-meta">📌 Пост: <a href="#" class="goto-post" data-post="${c.postId}">${escapeHtml(c.postTitle?.substring(0,60))}</a></div><div class="comment-actions"><button class="reply-disc" data-post="${c.postId}" data-comment="${c.id}" data-author="${escapeHtml(c.author)}">📎 Ответить</button></div></div>`; });
         postsContainer.innerHTML = html;
         document.querySelectorAll('.del-disc').forEach(btn => btn.addEventListener('click', async e => { await deleteComment(btn.getAttribute('data-post'), btn.getAttribute('data-comment')); }));
         document.querySelectorAll('.goto-post').forEach(btn => btn.addEventListener('click', e => { e.preventDefault(); currentView='posts'; renderPosts(); setTimeout(()=>document.querySelector(`.post-card:has([data-id="${btn.getAttribute('data-post')}"])`)?.scrollIntoView({behavior:'smooth'}),100); }));
@@ -260,45 +386,44 @@
         document.getElementById('submitGlobalComment')?.addEventListener('click', async () => { const inp = document.getElementById('newGlobalComment'); if(inp.value.trim() && allPosts.length) { await addComment(allPosts[0].id, inp.value.trim()); inp.value = ''; } else alert('Нет постов или пустой комментарий'); });
     }
 
-    // Посты
     async function createPost(title, text, isPrivate) { if(title.length>100 || text.length>10000) return alert('Лимиты'); await addDoc(collection(db,"posts"), { title, text, authorNick: currentUser.nickname, authorAvatar: currentUser.avatar, date: Timestamp.now(), comments: [], likes: {}, private: isPrivate }); updateUserStats(); }
 
     function subscribePosts() { onSnapshot(query(collection(db,"posts"), orderBy("date","desc")), snap => { allPosts = []; snap.forEach(d => allPosts.push({ id: d.id, ...d.data() })); if(currentView === 'posts') renderPosts(); else if(currentView === 'discussions') renderDiscussions(); }); }
+    function subscribeUsers() { onSnapshot(collection(db,"users"), snap => { allUsers = []; snap.forEach(d => allUsers.push({ id: d.id, ...d.data() })); }); }
 
     // ЛС
     async function sendMessage(to, text) { if(!text.trim()) return; const chatId = [currentUser.nickname, to].sort().join('_'); await setDoc(doc(db,"chats",chatId), { participants: [currentUser.nickname, to], lastMessage: text, lastUpdate: Timestamp.now() }, { merge: true }); await addDoc(collection(db,"chats",chatId,"messages"), { from: currentUser.nickname, text, timestamp: Timestamp.now() }); }
-    function loadChats() { const q = query(collection(db,"chats"), where("participants","array-contains",currentUser.nickname)); onSnapshot(q, snap => { const chats = []; snap.forEach(d => { const data = d.data(); const other = data.participants.find(p=>p!==currentUser.nickname); chats.push({ id: d.id, other, lastMessage: data.lastMessage }); }); document.getElementById('chatUsersList').innerHTML = chats.map(c => `<div class="chat-user" data-user="${c.other}"><strong>@${escapeHtml(c.other)}</strong><div style="font-size:11px">${escapeHtml(c.lastMessage?.substring(0,30))}</div></div>`).join(''); document.querySelectorAll('.chat-user').forEach(el => el.addEventListener('click', () => { currentChatWith = el.getAttribute('data-user'); loadMessages(currentChatWith); document.querySelectorAll('.chat-user').forEach(u=>u.classList.remove('active')); el.classList.add('active'); })); }); }
+    function loadChats(searchTerm='') { const q = query(collection(db,"chats"), where("participants","array-contains",currentUser.nickname)); onSnapshot(q, snap => { let chats = []; snap.forEach(d => { const data = d.data(); const other = data.participants.find(p=>p!==currentUser.nickname); if(other.toLowerCase().includes(searchTerm.toLowerCase())) chats.push({ id: d.id, other, lastMessage: data.lastMessage }); }); document.getElementById('chatUsersList').innerHTML = chats.map(c => `<div class="chat-user" data-user="${c.other}"><strong>@${escapeHtml(c.other)}</strong><div style="font-size:11px">${escapeHtml(c.lastMessage?.substring(0,30))}</div></div>`).join(''); document.querySelectorAll('.chat-user').forEach(el => el.addEventListener('click', () => { currentChatWith = el.getAttribute('data-user'); loadMessages(currentChatWith); document.querySelectorAll('.chat-user').forEach(u=>u.classList.remove('active')); el.classList.add('active'); })); }); }
     function loadMessages(withUser) { if(unsubscribeChat) unsubscribeChat(); const chatId = [currentUser.nickname, withUser].sort().join('_'); const messagesDiv = document.getElementById('chatMessages'); unsubscribeChat = onSnapshot(query(collection(db,"chats",chatId,"messages"), orderBy("timestamp")), snap => { messagesDiv.innerHTML = ''; snap.forEach(d => { const msg = d.data(); const isMy = msg.from === currentUser.nickname; messagesDiv.innerHTML += `<div class="chat-message ${isMy ? 'my' : 'other'}"><strong>${isMy ? 'Я' : '@'+escapeHtml(msg.from)}</strong><br>${escapeHtml(msg.text)}<div style="font-size:10px;opacity:0.6">${formatDate(msg.timestamp)}</div></div>`; }); messagesDiv.scrollTop = messagesDiv.scrollHeight; }); }
+    function showAllUsersList() { const container = document.getElementById('allUsersList'); const searchInput2 = document.getElementById('allUsersSearch'); const render = () => { const term = searchInput2.value.toLowerCase(); const filtered = allUsers.filter(u => u.nickname !== currentUser.nickname && u.nickname.toLowerCase().includes(term)); container.innerHTML = filtered.map(u => `<div class="user-item" data-user="${u.nickname}" style="cursor:pointer"><strong>@${escapeHtml(u.nickname)}</strong> ${u.avatar || '😀'}</div>`).join(''); document.querySelectorAll('.user-item').forEach(el => el.addEventListener('click', () => { document.querySelectorAll('.user-item').forEach(x=>x.style.background='none'); el.style.background='rgba(0,255,0,0.2)'; selectedAllUser = el.getAttribute('data-user'); })); }; render(); searchInput2.oninput = render; document.getElementById('allUsersModal').style.display='flex'; }
 
     // Админ инфо
     function showUserList() { if(!isAdmin) return; const container = document.getElementById('userListContainer'); container.innerHTML = ''; allUsers.forEach(u => { const dateStr = u.firstSeen ? new Date(u.firstSeen.toDate()).toLocaleString() : 'неизвестно'; container.innerHTML += `<div class="user-item"><div><strong>@${escapeHtml(u.nickname)}</strong><br>📍 IP: ${escapeHtml(u.ip)}<br>📅 Регистрация: ${dateStr}<br>📝 Постов: ${u.postsCount||0}, Комментов: ${u.commentsCount||0}</div><button class="delete-user-admin" data-user="${u.nickname}" style="margin-top:8px; border:1px solid #f66; padding:4px 12px; border-radius:20px">❌ Удалить пользователя</button></div>`; }); document.querySelectorAll('.delete-user-admin').forEach(btn => btn.addEventListener('click', async e => { if(confirm('Удалить пользователя?')) await deleteDoc(doc(db,"users",btn.getAttribute('data-user'))); })); infoModal.style.display='flex'; }
 
-    // Подписка на пользователей
-    function subscribeUsers() { onSnapshot(collection(db,"users"), snap => { allUsers = []; snap.forEach(d => allUsers.push({ id: d.id, ...d.data() })); }); }
-
-    // Инициализация
     (async function() {
         await getOrCreateUser();
         subscribeUsers();
         subscribePosts();
 
-        // События
         document.getElementById('createPostBtn').onclick = () => document.getElementById('postModal').style.display='flex';
         document.getElementById('discussionsBtn').onclick = () => { currentView='discussions'; renderDiscussions(); };
         document.getElementById('viewPostsBtn').onclick = () => { currentView='posts'; postsPage=0; renderPosts(); };
-        document.getElementById('chatBtn').onclick = () => { loadChats(); document.getElementById('chatModal').style.display='flex'; };
+        document.getElementById('chatBtn').onclick = () => { loadChats(); document.getElementById('chatModal').style.display='flex'; document.getElementById('chatUserSearch').value = ''; };
         document.getElementById('profileBtn').onclick = () => { document.getElementById('nicknameInput').value = currentUser.nickname; const sel = document.getElementById('avatarSelect'); sel.innerHTML = avatars.map(a => `<div class="avatar-option ${a===currentUser.avatar?'selected':''}" data-avatar="${a}">${a}</div>`).join(''); document.querySelectorAll('.avatar-option').forEach(el => el.addEventListener('click', () => { document.querySelectorAll('.avatar-option').forEach(x=>x.classList.remove('selected')); el.classList.add('selected'); })); document.getElementById('profileModal').style.display='flex'; };
         document.getElementById('saveProfileBtn').onclick = async () => { let newNick = document.getElementById('nicknameInput').value.trim(); const newAvatar = document.querySelector('.avatar-option.selected')?.innerText || currentUser.avatar; if(newNick && newNick !== currentUser.nickname) { if(!/^[a-zA-Z0-9\-]+$/.test(newNick) || newNick.length<1 || newNick.length>20) return alert('Некорректный ник'); if(await getDoc(doc(db,"users",newNick)).then(s=>s.exists())) return alert('Ник занят'); await deleteDoc(doc(db,"users",currentUser.nickname)); currentUser.nickname = newNick; localStorage.setItem('nowosty1_user_nick', newNick); } currentUser.avatar = newAvatar; localStorage.setItem('nowosty1_user_avatar', newAvatar); await setDoc(doc(db,"users",currentUser.nickname), { nickname: currentUser.nickname, avatar: currentUser.avatar, ip: await getUserIP(), firstSeen: Timestamp.now() }, { merge: true }); sidebarNick.innerText = currentUser.nickname; sidebarAvatar.innerText = currentUser.avatar; if(currentUser.nickname === 'SWILL_ADMIN') { isAdmin=true; infoBtn.style.display='inline-block'; } else { isAdmin=false; infoBtn.style.display='none'; } document.getElementById('profileModal').style.display='none'; location.reload(); };
         document.getElementById('submitPostBtn').onclick = async () => { await createPost(document.getElementById('postTitle').value, document.getElementById('postText').value, document.getElementById('postPrivate').checked); document.getElementById('postModal').style.display='none'; document.getElementById('postTitle').value=''; document.getElementById('postText').value=''; };
         document.getElementById('saveEditPost').onclick = async () => { await editPost(document.getElementById('editPostId').value, document.getElementById('editPostTitle').value, document.getElementById('editPostText').value); document.getElementById('editPostModal').style.display='none'; };
         document.getElementById('saveEditComment').onclick = async () => { await editComment(document.getElementById('editCommentPostId').value, document.getElementById('editCommentId').value, document.getElementById('editCommentText').value); document.getElementById('editCommentModal').style.display='none'; };
-        document.getElementById('addChatBtn').onclick = () => { const nick = document.getElementById('addChatUser').value.trim(); if(nick && nick !== currentUser.nickname) { currentChatWith = nick; loadMessages(nick); document.getElementById('chatModal').style.display='flex'; } else alert('Введите корректный ник'); };
+        document.getElementById('addChatBtn').onclick = () => { const nick = document.getElementById('addChatUser').value.trim(); if(nick && nick !== currentUser.nickname) { currentChatWith = nick; loadMessages(nick); document.getElementById('chatModal').style.display='flex'; document.getElementById('chatUserSearch').value = ''; loadChats(); } else alert('Введите корректный ник'); };
         document.getElementById('sendChatBtn').onclick = () => { if(currentChatWith) sendMessage(currentChatWith, document.getElementById('chatMessageInput').value); document.getElementById('chatMessageInput').value = ''; };
         document.getElementById('checkAdminBtn').onclick = () => { const code = document.getElementById('adminCode').value; if(code === 'RAZRABOTCHIK212') { localStorage.setItem('nowosty1_user_nick', 'SWILL_ADMIN'); location.reload(); } else alert('Неверный код'); };
         infoBtn.onclick = showUserList;
         searchInput.oninput = (e) => { searchQuery = e.target.value.toLowerCase(); postsPage=0; if(currentView==='posts') renderPosts(); };
         loadMoreBtn.onclick = () => { postsPage++; renderPosts(); };
         themeBtn.onclick = () => { const isDark = document.body.classList.contains('dark'); document.body.classList.remove(isDark?'dark':'light'); document.body.classList.add(isDark?'light':'dark'); themeBtn.innerText = isDark?'🌞':'🌙'; };
+        document.getElementById('chatUserSearch').oninput = (e) => loadChats(e.target.value);
+        document.getElementById('showAllUsersBtn').onclick = showAllUsersList;
+        document.getElementById('startChatFromList').onclick = () => { if(selectedAllUser) { currentChatWith = selectedAllUser; loadMessages(selectedAllUser); document.getElementById('allUsersModal').style.display='none'; document.getElementById('chatModal').style.display='flex'; loadChats(); } else alert('Выберите пользователя'); };
         document.querySelectorAll('.close').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.modal').forEach(m => m.style.display='none'); }));
         window.onclick = e => { if(e.target.classList.contains('modal')) e.target.style.display='none'; };
     })();
